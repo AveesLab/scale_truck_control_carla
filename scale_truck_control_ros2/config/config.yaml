@@ -32,7 +32,7 @@
     params/fv_max_vel: 190.00
     params/ref_vel: 0.00
 
-    params/target_dist: 14.0
+    params/target_dist: 18.0
     params/safety_dist: 18.0
     params/lv_stop_dist: 3.0
     params/fv_stop_dist: 3.0

@@ -319,7 +319,7 @@ void ScaleTruckController::checkState() {
     }
   }
 }
-
+float prev_dist = 0;
 void ScaleTruckController::objectdetectInThread() 
 {
   float dist, dist_tmp;
@@ -332,7 +332,26 @@ void ScaleTruckController::objectdetectInThread()
     std::scoped_lock lock(object_mutex_);         
     if(dist_tmp >= mindist_)
     {
-      dist_tmp = mindist_;
+      if(prev_dist != 0 ) {
+        float dist_gap = mindist_ - prev_dist;
+        if (dist_gap < 3.0f && dist_gap >-3.0f) {
+          dist_tmp = mindist_;
+          prev_dist = mindist_;
+        }
+        else {
+          dist_tmp = mindist_;
+           prev_dist = mindist_;
+        }
+      }
+      else {
+	if (mindist_ > 13.5 && mindist_ < 14.5) {
+		prev_dist = mindist_;
+		dist_tmp = mindist_;
+	}
+	else {
+		dist_tmp = mindist_;
+      		}
+    	}
     }
 
     distance_ = dist_tmp;
