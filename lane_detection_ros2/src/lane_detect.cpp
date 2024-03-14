@@ -1625,7 +1625,7 @@ Mat LaneDetector::draw_lane(Mat _sliding_frame, Mat _frame) {
     const Point* droi_points_point = (const cv::Point*) Mat(droi_points).data;
     int droi_points_number = Mat(droi_points).rows;
 
-    //polylines(_frame, &roi_points_point, &roi_points_number, 1, false, Scalar(0, 0, 255), 5);
+    polylines(_frame, &roi_points_point, &roi_points_number, 1, false, Scalar(0, 0, 255), 5);
     polylines(_frame, &droi_points_point, &droi_points_number, 1, false, Scalar(0, 255, 0), 5);
 
     string TEXT = "ROI";

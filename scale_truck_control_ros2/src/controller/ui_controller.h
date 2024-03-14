@@ -267,19 +267,19 @@ public:
         FV1_Left_LC->setObjectName(QStringLiteral("FV1_Left_LC"));
         FV1_Left_LC->setCheckable(true);
 
-        FV1LaneChange->addWidget(FV1_Left_LC);
+//        FV1LaneChange->addWidget(FV1_Left_LC);
 
         FV1_Rear = new QPushButton(FV1GBOX);
         FV1_Rear->setObjectName(QStringLiteral("FV1_Rear"));
   FV1_Rear->setCheckable(true);
 
-        FV1LaneChange->addWidget(FV1_Rear);
+//        FV1LaneChange->addWidget(FV1_Rear);
 
         FV1_Right_LC = new QPushButton(FV1GBOX);
         FV1_Right_LC->setObjectName(QStringLiteral("FV1_Right_LC"));
   FV1_Right_LC->setCheckable(true);
 
-        FV1LaneChange->addWidget(FV1_Right_LC);
+//        FV1LaneChange->addWidget(FV1_Right_LC);
 
 
         gridLayout_4->addLayout(FV1LaneChange, 8, 0, 1, 4);
@@ -417,19 +417,19 @@ public:
         LV_Left_LC->setObjectName(QStringLiteral("LV_Left_LC"));
         LV_Left_LC->setCheckable(true);
 
-        LVLaneChange->addWidget(LV_Left_LC);
+//        LVLaneChange->addWidget(LV_Left_LC);
 
         LV_Rear = new QPushButton(LVGBOX);
         LV_Rear->setObjectName(QStringLiteral("LV_Rear"));
   LV_Rear->setCheckable(true);
 
-        LVLaneChange->addWidget(LV_Rear);
+//        LVLaneChange->addWidget(LV_Rear);
 
         LV_Right_LC = new QPushButton(LVGBOX);
         LV_Right_LC->setObjectName(QStringLiteral("LV_Right_LC"));
   LV_Right_LC->setCheckable(true);
 
-        LVLaneChange->addWidget(LV_Right_LC);
+//        LVLaneChange->addWidget(LV_Right_LC);
 
 
         gridLayout_3->addLayout(LVLaneChange, 5, 0, 1, 4);
@@ -541,19 +541,19 @@ public:
         FV2_Left_LC->setObjectName(QStringLiteral("FV2_Left_LC"));
         FV2_Left_LC->setCheckable(true);
 
-        FV2LaneChange->addWidget(FV2_Left_LC);
+//        FV2LaneChange->addWidget(FV2_Left_LC);
 
         FV2_Rear = new QPushButton(FV2GBOX);
         FV2_Rear->setObjectName(QStringLiteral("FV2_Rear"));
   FV2_Rear->setCheckable(true);
 
-        FV2LaneChange->addWidget(FV2_Rear);
+//        FV2LaneChange->addWidget(FV2_Rear);
 
         FV2_Right_LC = new QPushButton(FV2GBOX);
         FV2_Right_LC->setObjectName(QStringLiteral("FV2_Right_LC"));
         FV2_Right_LC->setCheckable(true);
 
-        FV2LaneChange->addWidget(FV2_Right_LC);
+//        FV2LaneChange->addWidget(FV2_Right_LC);
 
         gridLayout_5->addLayout(FV2LaneChange, 6, 0, 1, 4);
 
@@ -703,10 +703,10 @@ public:
         label_24->setText(QApplication::translate("Controller", "m", Q_NULLPTR));
         label_3->setText(QApplication::translate("Controller", "Target Velocity", Q_NULLPTR));
         label_33->setText(QApplication::translate("Controller", "m", Q_NULLPTR));
-        label_28->setText(QApplication::translate("Controller", "m/s", Q_NULLPTR));
+        label_28->setText(QApplication::translate("Controller", "km/h", Q_NULLPTR));
         FV1CurDist->setText(QApplication::translate("Controller", "0", Q_NULLPTR));
         label_16->setText(QApplication::translate("Controller", "Mode", Q_NULLPTR));
-        label_23->setText(QApplication::translate("Controller", "m/s", Q_NULLPTR));
+        label_23->setText(QApplication::translate("Controller", "km/h", Q_NULLPTR));
         label_8->setText(QApplication::translate("Controller", "Current Velocity", Q_NULLPTR));
         label_10->setText(QApplication::translate("Controller", "Current Distance", Q_NULLPTR));
         label_9->setText(QApplication::translate("Controller", "Target Distance", Q_NULLPTR));
@@ -720,9 +720,9 @@ public:
          << QApplication::translate("Controller", "FV2", Q_NULLPTR)
         );
         FV1TarVel->setText(QApplication::translate("Controller", "0", Q_NULLPTR));
-        FV1_Left_LC->setText(QApplication::translate("Controller", "Left LC", Q_NULLPTR));
-        FV1_Rear->setText(QApplication::translate("Controller", "Rear", Q_NULLPTR));
-        FV1_Right_LC->setText(QApplication::translate("Controller", "Right LC", Q_NULLPTR));
+//        FV1_Left_LC->setText(QApplication::translate("Controller", "Left LC", Q_NULLPTR));
+//        FV1_Rear->setText(QApplication::translate("Controller", "Rear", Q_NULLPTR));
+//        FV1_Right_LC->setText(QApplication::translate("Controller", "Right LC", Q_NULLPTR));
         LVGBOX->setTitle(QApplication::translate("Controller", "LV", Q_NULLPTR));
         LVCurDist->setText(QApplication::translate("Controller", "0", Q_NULLPTR));
         label_13->setText(QApplication::translate("Controller", "Target Distance", Q_NULLPTR));
@@ -740,16 +740,16 @@ public:
         label_2->setText(QApplication::translate("Controller", "Target Velocity", Q_NULLPTR));
         label_27->setText(QApplication::translate("Controller", "m/s", Q_NULLPTR));
         label_11->setText(QApplication::translate("Controller", "Current Distance", Q_NULLPTR));
-        label_21->setText(QApplication::translate("Controller", "m/s", Q_NULLPTR));
+        label_21->setText(QApplication::translate("Controller", "km/h", Q_NULLPTR));
         LVTarVel->setText(QApplication::translate("Controller", "0", Q_NULLPTR));
         label_34->setText(QApplication::translate("Controller", "m", Q_NULLPTR));
         label_22->setText(QApplication::translate("Controller", "m", Q_NULLPTR));
-        LV_Left_LC->setText(QApplication::translate("Controller", "Left LC", Q_NULLPTR));
-        LV_Rear->setText(QApplication::translate("Controller", "Rear", Q_NULLPTR));
-        LV_Right_LC->setText(QApplication::translate("Controller", "Right LC", Q_NULLPTR));
+//        LV_Left_LC->setText(QApplication::translate("Controller", "Left LC", Q_NULLPTR));
+//        LV_Rear->setText(QApplication::translate("Controller", "Rear", Q_NULLPTR));
+//        LV_Right_LC->setText(QApplication::translate("Controller", "Right LC", Q_NULLPTR));
         MGBOX->setTitle(QApplication::translate("Controller", "Master", Q_NULLPTR));
         MTarVel->setText(QApplication::translate("Controller", "0", Q_NULLPTR));
-        label_39->setText(QApplication::translate("Controller", "m/s", Q_NULLPTR));
+        label_39->setText(QApplication::translate("Controller", "km/h", Q_NULLPTR));
         pushButton->setText(QApplication::translate("Controller", "Emergency Stop", Q_NULLPTR));
         label->setText(QApplication::translate("Controller", "Target Velocity", Q_NULLPTR));
         MTarDist->setText(QApplication::translate("Controller", "0", Q_NULLPTR));
@@ -761,9 +761,9 @@ public:
         FV2_MAP->setText(QApplication::translate("Controller", "FV2", Q_NULLPTR));
         FV2GBOX->setTitle(QApplication::translate("Controller", "FV2", Q_NULLPTR));
         label_17->setText(QApplication::translate("Controller", "Mode", Q_NULLPTR));
-        FV2_Left_LC->setText(QApplication::translate("Controller", "Left LC", Q_NULLPTR));
-        FV2_Rear->setText(QApplication::translate("Controller", "Rear", Q_NULLPTR));
-        FV2_Right_LC->setText(QApplication::translate("Controller", "Right LC", Q_NULLPTR));
+//        FV2_Left_LC->setText(QApplication::translate("Controller", "Left LC", Q_NULLPTR));
+//        FV2_Rear->setText(QApplication::translate("Controller", "Rear", Q_NULLPTR));
+//        FV2_Right_LC->setText(QApplication::translate("Controller", "Right LC", Q_NULLPTR));
         FV2CurDist->setText(QApplication::translate("Controller", "0", Q_NULLPTR));
         label_7->setText(QApplication::translate("Controller", "Current Distance", Q_NULLPTR));
         label_4->setText(QApplication::translate("Controller", "Target Velocity", Q_NULLPTR));
@@ -775,8 +775,8 @@ public:
          << QApplication::translate("Controller", "FV1", Q_NULLPTR)
          << QApplication::translate("Controller", "FV2", Q_NULLPTR)
         );
-        label_25->setText(QApplication::translate("Controller", "m/s", Q_NULLPTR));
-        label_29->setText(QApplication::translate("Controller", "m/s", Q_NULLPTR));
+        label_25->setText(QApplication::translate("Controller", "km/h", Q_NULLPTR));
+        label_29->setText(QApplication::translate("Controller", "km/h", Q_NULLPTR));
         FV2CurVel->setText(QApplication::translate("Controller", "0", Q_NULLPTR));
         FV2TarDist->setText(QApplication::translate("Controller", "0", Q_NULLPTR));
         label_5->setText(QApplication::translate("Controller", "Current Velocity", Q_NULLPTR));

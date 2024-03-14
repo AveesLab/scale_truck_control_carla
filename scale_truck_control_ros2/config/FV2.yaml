@@ -45,10 +45,10 @@
 
     ROI/front_cam/width: 640
     ROI/front_cam/height: 480
-    ROI/front_cam/top_gap: 0.405 #0.390(11m)
-    ROI/front_cam/bot_gap: 0.290  #0.305(11m) 
+    ROI/front_cam/top_gap: 0.415 #0.390(11m)
+    ROI/front_cam/bot_gap: 0.310  #0.305(11m) 
     ROI/front_cam/top_height: 0.99
-    ROI/front_cam/bot_height: 0.46  #0.50 (11m)
+    ROI/front_cam/bot_height: 0.48  #0.50 (11m)
     ROI/front_cam/extra_f: 0.00 
     ROI/front_cam/extra_b: 0.00 
     ROI/front_cam/extra_up: 50 #50(11m)

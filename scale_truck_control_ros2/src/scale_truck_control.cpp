@@ -391,7 +391,7 @@ void ScaleTruckController::objectdetectInThread()
 
     /* FOR ICRA  */
     //dist_tmp = ICRA_dist;
-//    dist_tmp = 0.8f;
+//    dist_tmp = 14.0f;
 //    distance_ = dist_tmp;
   }   
 
@@ -402,7 +402,7 @@ void ScaleTruckController::objectdetectInThread()
     std::scoped_lock lock(lane_mutex_, vel_mutex_, rep_mutex_);
     if(dist_tmp < 14.00f && dist_tmp > 3.00f) // 1.26 ~ 0.28
     {
-      Lane_.cur_dist = (int)((14.0f - dist_tmp)*53.33f);
+      Lane_.cur_dist = (int)((10.0f - dist_tmp)*45.33f);
     }
     else {
       Lane_.cur_dist = 0;
