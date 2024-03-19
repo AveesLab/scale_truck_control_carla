@@ -2217,41 +2217,70 @@ float LaneDetector::display_img(Mat _frame, int _delay, bool _view) {
 
   /* End apply ROI setting */
 
-  if(!_frame.empty()) resize(_frame, new_frame, Size(width_, height_), 0, 0, cv::INTER_LINEAR);
-
-  cuda::GpuMat gpu_map1, gpu_map2;
-  gpu_map1.upload(map1_);
-  gpu_map2.upload(map2_);
+//  if(!_frame.empty()) resize(_frame, new_frame, Size(width_, height_), 0, 0, cv::INTER_LINEAR);
+//
+//  cuda::GpuMat gpu_map1, gpu_map2;
+//  gpu_map1.upload(map1_);
+//  gpu_map2.upload(map2_);
+//  
+//  cuda::GpuMat gpu_frame, gpu_remap_frame, gpu_warped_frame, gpu_blur_frame, gpu_gray_frame, gpu_binary_frame;
+//  
+//  gpu_frame.upload(new_frame);
+//  cuda::remap(gpu_frame, gpu_remap_frame, gpu_map1, gpu_map2, INTER_LINEAR);
+//  gpu_remap_frame.download(new_frame);  /* apply camera matrix to new_frame */
+//
+//  /* ROI apply frame */
+//  if (imageStatus_ && TEST) { // For view TEST ROI
+//    cuda::warpPerspective(gpu_remap_frame, gpu_warped_frame, test_trans, Size(width_, height_));
+//  }
+//  else { 
+//    cuda::warpPerspective(gpu_remap_frame, gpu_warped_frame, trans, Size(width_, height_)); 
+//  }
+//  gpu_warped_frame.download(warped_frame);
+//
+//  static cv::Ptr< cv::cuda::Filter > filters;
+//  filters = cv::cuda::createGaussianFilter(gpu_warped_frame.type(), gpu_blur_frame.type(), cv::Size(5,5), 0, 0, cv::BORDER_DEFAULT);
+//  filters->apply(gpu_warped_frame, gpu_blur_frame);
+//  cuda::cvtColor(gpu_blur_frame, gpu_gray_frame, COLOR_BGR2GRAY);
+//  gpu_gray_frame.download(gray_frame);
+//  
+//  for(int y = height_/2; y < gray_frame.rows; y++) {
+//      for(int x = 0; x < gray_frame.cols; x++) {
+//          if(gray_frame.at<uchar>(y, x) == 0) {
+//              gray_frame.at<uchar>(y, x) = 0;
+//          }
+//      }
+//  }
+  if (!_frame.empty())
+      resize(_frame, new_frame, Size(width_, height_), 0, 0, cv::INTER_LINEAR);
   
-  cuda::GpuMat gpu_frame, gpu_remap_frame, gpu_warped_frame, gpu_blur_frame, gpu_gray_frame, gpu_binary_frame;
+  cv::Mat map1, map2;
+  map1 = Mat(map1_);
+  map2 = Mat(map2_);
   
-  gpu_frame.upload(new_frame);
-  cuda::remap(gpu_frame, gpu_remap_frame, gpu_map1, gpu_map2, INTER_LINEAR);
-  gpu_remap_frame.download(new_frame);  /* apply camera matrix to new_frame */
-
-  /* ROI apply frame */
+  cv::Mat remap_frame;
+  remap(new_frame, remap_frame, map1, map2, INTER_LINEAR);
+  
+//  cv::Mat warped_frame;
   if (imageStatus_ && TEST) { // For view TEST ROI
-    cuda::warpPerspective(gpu_remap_frame, gpu_warped_frame, test_trans, Size(width_, height_));
+      warpPerspective(remap_frame, warped_frame, test_trans, Size(width_, height_));
+  } else {
+      warpPerspective(remap_frame, warped_frame, trans, Size(width_, height_));
   }
-  else { 
-    cuda::warpPerspective(gpu_remap_frame, gpu_warped_frame, trans, Size(width_, height_)); 
-  }
-  gpu_warped_frame.download(warped_frame);
-
-  static cv::Ptr< cv::cuda::Filter > filters;
-  filters = cv::cuda::createGaussianFilter(gpu_warped_frame.type(), gpu_blur_frame.type(), cv::Size(5,5), 0, 0, cv::BORDER_DEFAULT);
-  filters->apply(gpu_warped_frame, gpu_blur_frame);
-  cuda::cvtColor(gpu_blur_frame, gpu_gray_frame, COLOR_BGR2GRAY);
-  gpu_gray_frame.download(gray_frame);
   
-  for(int y = height_/2; y < gray_frame.rows; y++) {
-      for(int x = 0; x < gray_frame.cols; x++) {
-          if(gray_frame.at<uchar>(y, x) == 0) {
+  cv::Mat blur_frame; 
+  GaussianBlur(warped_frame, blur_frame, Size(5, 5), 0, 0, BORDER_DEFAULT);
+//  cv::Mat gray_frame;
+  cvtColor(blur_frame, gray_frame, COLOR_BGR2GRAY);
+  
+  for (int y = height_ / 2; y < gray_frame.rows; y++) {
+      for (int x = 0; x < gray_frame.cols; x++) {
+          if (gray_frame.at<uchar>(y, x) == 0) {
               gray_frame.at<uchar>(y, x) = 0;
           }
       }
   }
-
+//  cv::Mat binary_frame;
   /* adaptive Threshold */
   adaptiveThreshold(gray_frame, binary_frame, 255, ADAPTIVE_THRESH_MEAN_C, THRESH_BINARY, Threshold_box_size_, -(Threshold_box_offset_));
 
