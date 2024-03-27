@@ -342,8 +342,6 @@ void ScaleTruckController::spin()
       rclcpp::shutdown();
     }
 
-    if(CurVel_ != 0) recordData(init_);
-
     if(enableConsoleOutput_)
       displayConsole();
 
