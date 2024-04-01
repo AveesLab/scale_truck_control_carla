@@ -29,7 +29,8 @@ ScaleTruckController::~ScaleTruckController() {
   }
   {
     std::scoped_lock lock(rep_mutex_);
-    msg.tar_dist = TargetDist_; 
+    msg.tar_dist = TargetDist_;
+    msg.emergency_flag = Emergency_; 
   }
 
   LrcPublisher_->publish(msg);
@@ -326,6 +327,7 @@ void ScaleTruckController::spin()
     {
       std::scoped_lock lock(rep_mutex_);
       msg.tar_dist = TargetDist_;
+      msg.emergency_flag = Emergency_;
     }    
 
     struct timeval cur_time;
@@ -424,6 +426,7 @@ void ScaleTruckController::CmdSubCallback(const ros2_msg::msg::Cmd2xav::SharedPt
     if(index_ == 0) {   
       TargetVel_ = msg->tar_vel;
       TargetDist_ = msg->tar_dist;
+      Emergency_ = msg->emergency_flag;
     }
   }
 

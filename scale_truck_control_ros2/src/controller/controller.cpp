@@ -581,7 +581,7 @@ void Controller::on_LVDistSlider_valueChanged(int value)
   ui->FV2TarDist->setText(QString::number(value/100.0)); // m
 }
 
-void Controller::on_pushButton_clicked()  //Emergency stop
+void Controller::on_pushButton_clicked(bool checked)  //Emergency stop
 {
   ros2_msg::msg::Cmd2xav cmd_data;
   float LV_dist = ui->LVDistSlider->value()/100.0f;
@@ -589,11 +589,13 @@ void Controller::on_pushButton_clicked()  //Emergency stop
   ui->LVVelSlider->setValue(0);
   ui->FV1VelSlider->setValue(0);
   ui->FV2VelSlider->setValue(0);
+  Emergency_flag = true;
 
   cmd_data.src_index = 20;
   cmd_data.tar_index = 0;
   cmd_data.tar_vel = 0;
   cmd_data.tar_dist = LV_dist;
+  cmd_data.emergency_flag = Emergency_flag;
   requestData(cmd_data);
 }
 

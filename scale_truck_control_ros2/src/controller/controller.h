@@ -65,6 +65,8 @@ public:
     static CmdData fv2_data_;
 
     static int cnt;
+    
+    bool Emergency_flag = false;
 
     int MinVel;
     int MaxVel;
@@ -142,7 +144,7 @@ private slots:
 
     void on_LVDistSlider_valueChanged(int value);
 
-    void on_pushButton_clicked();
+    void on_pushButton_clicked(bool checked);
 
     void on_LVBox_activated(int index);
 

@@ -24,6 +24,8 @@ public:
     float est_vel_;
     float preceding_truck_vel_;
     float output_;
+
+    bool emergency_stop_ = false;
     
     ros2_msg::msg::Ocr2lrc pub_msg_;
     std_msgs::msg::Float32 control_msg_;

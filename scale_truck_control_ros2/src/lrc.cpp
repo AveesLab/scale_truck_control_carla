@@ -103,6 +103,7 @@ void LocalRC::radio()
       std::scoped_lock lock(data_mutex_);
       lv_data_.tar_vel = tar_vel_;
       lv_data_.tar_dist = tar_dist_;
+      lv_data_.emergency_flag = emergency_flag_;
     }
 
     FVPublisher_->publish(lv_data_); 
@@ -125,6 +126,7 @@ void LocalRC::rosPub(){
     ocr.tar_dist = tar_dist_;
     ocr.tar_vel = tar_vel_;
     ocr.est_vel = est_vel_;
+    ocr.emergency_flag = emergency_flag_;
   }
   XavPublisher_->publish(xav);
   OcrPublisher_->publish(ocr);
@@ -225,6 +227,7 @@ void LocalRC::XavCallback(const ros2_msg::msg::Xav2lrc::SharedPtr msg)
   if(index_ == 10){  //only LV LRC
     tar_vel_ = msg->tar_vel;
     tar_dist_ = msg->tar_dist;
+    emergency_flag_ = msg->emergency_flag;
   }
 
 //  /* delay time */
@@ -268,6 +271,7 @@ void LocalRC::LVCallback(const ros2_msg::msg::Lrc2xav::SharedPtr msg)
   std::scoped_lock lock(data_mutex_);
   tar_vel_ = msg->tar_vel;
   tar_dist_ = msg->tar_dist;
+  emergency_flag_ = msg->emergency_flag;
 }
 
 
