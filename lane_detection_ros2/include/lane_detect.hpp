@@ -22,13 +22,13 @@
 #include "std_msgs/msg/header.hpp"
 
 #include <opencv2/opencv.hpp>
-#include <opencv2/highgui/highgui.hpp>
-#include <opencv2/cudaarithm.hpp>
-#include <opencv2/cudafeatures2d.hpp>
-#include <opencv2/core/cuda.hpp>
-#include <opencv2/cudaimgproc.hpp>
-#include <opencv2/cudawarping.hpp>
-#include <opencv2/cudafilters.hpp>
+//#include <opencv2/highgui/highgui.hpp>
+//#include <opencv2/cudaarithm.hpp>
+//#include <opencv2/cudafeatures2d.hpp>
+//#include <opencv2/core/cuda.hpp>
+//#include <opencv2/cudaimgproc.hpp>
+//#include <opencv2/cudawarping.hpp>
+//#include <opencv2/cudafilters.hpp>
 
 //ROS2
 #include "rclcpp/rclcpp.hpp"
@@ -91,7 +91,7 @@ private:
   Mat drawBox(Mat frame);
   void controlSteer();
   void clear_release();
-  tk::spline cspline();
+
   cv::Point2f transformPoint(const cv::Point& pt, const cv::Mat& camera_matrix, const cv::Mat& dist_coeffs); 
 
   //Publisher
