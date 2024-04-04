@@ -100,7 +100,9 @@ git clone https://github.com/ysrhee6199/CarlaSemiTruckTrailer.git
 > 6. Optionally, provide a set of recommended colors for the vehicle. Name the "model" an "make" as below in the picture
 ![image](https://github.com/AveesLab/scale_truck_control_carla/assets/117966644/6f08583c-eff5-4734-87f6-a0dc88671be0)
 
+
 > 7. Compile and save.
+
 ![image](https://github.com/AveesLab/scale_truck_control_carla/assets/117966644/ed9bc67b-2432-4cfa-ade1-21297d185d00)
 
 
