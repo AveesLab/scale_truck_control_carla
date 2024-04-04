@@ -87,11 +87,26 @@ make PythonAPI
 make launch
 ```
 
+# 4. Import Truck & Trailer models
+- Install models 
+```
+git clone https://github.com/ysrhee6199/CarlaSemiTruckTrailer.git
+```
+> 1. In Content/Carla/Blueprint/Vehicle, open the VehicleFactory file.
+> 2. In the Generate Definitions tab, double click Vehicles.
+> 3. In the Details panel, expand the Default Value section and add a new element to the vehicles array.
+> 4. Fill in the Make and Model of your vehicle. For the truck name de Make "DAFxf". And for the trailer name the Make: "trailer".
+> 5. Fill in the Class value with your BP_<vehicle_name> file.
+> 6. Optionally, provide a set of recommended colors for the vehicle. Name the "model" an "make" as below in the picture
+![image](https://github.com/AveesLab/scale_truck_control_carla/assets/117966644/6f08583c-eff5-4734-87f6-a0dc88671be0)
+> 7. Compile and save.
+![image](https://github.com/AveesLab/scale_truck_control_carla/assets/117966644/ed9bc67b-2432-4cfa-ade1-21297d185d00)
 
-
-
-
-
+- Test the vehicle
+> Launch CARLA, open a terminal in PythonAPI/examples and run the following command:
+```
+python manual_controlSemiTrailer.py
+```
 
 
 
