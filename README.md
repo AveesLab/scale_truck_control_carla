@@ -82,7 +82,7 @@ make launch
 ```
 
 # 4. Import Truck & Trailer models
-- Install models 
+- Install vehicle models 
 ```
 git clone https://github.com/ysrhee6199/CarlaSemiTruckTrailer.git
 ```
