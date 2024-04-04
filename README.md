@@ -98,6 +98,7 @@ git clone https://github.com/ysrhee6199/CarlaSemiTruckTrailer.git
 > 4. Fill in the Make and Model of your vehicle. For the truck name de Make "DAFxf". And for the trailer name the Make: "trailer".
 > 5. Fill in the Class value with your BP_<vehicle_name> file.
 > 6. Optionally, provide a set of recommended colors for the vehicle. Name the "model" an "make" as below in the picture
+
 ![image](https://github.com/AveesLab/scale_truck_control_carla/assets/117966644/6f08583c-eff5-4734-87f6-a0dc88671be0)
 
 
