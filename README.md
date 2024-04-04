@@ -1,9 +1,6 @@
 # Carla for Truck Platooning
 
 
-# Install CARLA
-
-
 # System Requirements
 ```
 - Ubuntu 20.04.** CARLA provides support for previous Ubuntu versions up to 16.04. **However** proper compilers are needed for Unreal Engine to work properly.
@@ -66,24 +63,24 @@ git checkout tags/0.9.15
 ```
 vi ~/carla/Util/BuildTools/Setup.sh
 ```
-- Remove 94~99 lines & insert this code
+> Remove 94~99 lines & insert this code
 ```
 wget "https://carla-releases.s3.eu-west-3.amazonaws.com/Backup/${BOOST_PACKAGE_BASENAME}.tar.gz" || true
 ```
-- Get assets
+> Get assets
 ```
 ./Update.sh
 ```
-- Set Unreal Engine Environment Variables
+> Set Unreal Engine Environment Variables
 ```
 sudo vi ~/.bashrc
 ```
-- Insert this code in last line
+> Insert this code in last line
 ```
 export UE4_ROOT=~/UnrealEngine_4.26
 ```
-- Reboot Terminal
-- Build carla
+> Reboot Terminal
+> Build carla
 ```
 cd ~/carla
 make PythonAPI
