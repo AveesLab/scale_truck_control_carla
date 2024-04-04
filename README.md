@@ -112,7 +112,7 @@ python manual_controlSemiTrailer.py
 ```
 git clone 
 ```
-> 1. In **~/carla/Unreal/CarlaUE4/Content/Carla/Maps/BaseMap** directory, duplicate BaseMap(1) & Run BaseMap(1)
+> 1. In **~/carla/Unreal/CarlaUE4/Content/Carla/Maps/BaseMap** directory, duplicate BaseMap & Run BaseMap(1)
 > 2. Import "map file", then created Node file
 > 3. Drag and drop "Node file" to Unreal engine GUI
 > 4. 좌표 0, 0, 0으로 설정
