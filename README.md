@@ -115,8 +115,10 @@ git clone
 > 1. In **~/carla/Unreal/CarlaUE4/Content/Carla/Maps/BaseMap** directory, duplicate BaseMap & Run BaseMap(1)
 > 2. Import "map file", then created Node file
 > 3. Drag and drop "Node file" to Unreal engine GUI
-> 4. 좌표 0, 0, 0으로 설정
-> 5. Elements 2 변경
+> 4. **Details** tab -> **Transform** tab -> Set **Location** 0, 0, 0
+> 5. Elements 0 : M_Ledge
+     Elements 1 : M_Road_03_Tiled_V3
+     Elements 2 : M_Road_03_Tiled
 
 # 6. Install ROS 2 (Galactic)
 > Set locale
