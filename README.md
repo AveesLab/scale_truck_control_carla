@@ -1,5 +1,3 @@
-# Carla for Truck Platooning
-
 # After Host PC setting
 
 # 1. Set container
