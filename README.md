@@ -86,6 +86,7 @@ make launch
 ```
 git clone https://github.com/ysrhee6199/CarlaSemiTruckTrailer.git
 ```
+> Merge **PythonAPI** & **Unreal** in carla directory
 > 1. In ```Content/Carla/Blueprint/Vehicle```, open the ```VehicleFactory``` file.
 > 2. In the **Generate Definitions** tab, double click **Vehicles**.
 > 3. In the **Details panel**, expand the **Default Value** section and add a new element to the vehicles array.
@@ -116,9 +117,9 @@ git clone
 > 2. Import "map file", then created Node file
 > 3. Drag and drop "Node file" to Unreal engine GUI
 > 4. **Details** tab -> **Transform** tab -> Set **Location** 0, 0, 0
-> 5. Elements 0 : M_Ledge
-     Elements 1 : M_Road_03_Tiled_V3
-     Elements 2 : M_Road_03_Tiled
+> 5. Elements 0 : M_Ledge 
+     / Elements 1 : M_Road_03_Tiled_V3
+     / Elements 2 : M_Road_03_Tiled
 
 # 6. Install ROS 2 (Galactic)
 > Set locale
