@@ -25,7 +25,7 @@ colcon build --symlink-install
 ```
 # 2. Run ROS2 pakcages
 - Open three terminal
-> In a terminal
+> First terminal
 ```
 # Docker exec
 docker start world
@@ -37,7 +37,7 @@ cd /home/ros2_ws
 source /opt/ros/galactic/setup.bash
 ros2 launch scale_truck_control_ros2 LV.launch.py
 ```
-> In another terminal
+> Second terminal
 ```
 # Docker exec
 docker start world
@@ -49,7 +49,7 @@ cd /home/ros2_ws
 source /opt/ros/galactic/setup.bash
 ros2 launch scale_truck_control_ros2 FV1.launch.py
 ```
-> In another terminal
+> Third terminal
 ```
 # Docker exec
 docker start world
