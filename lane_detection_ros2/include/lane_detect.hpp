@@ -100,12 +100,10 @@ private:
   //Subscriber
   rclcpp::Subscription<ros2_msg::msg::Xav2lane>::SharedPtr XavSubscriber_;
   rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr ImageSubscriber_;
-  rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr rearImageSubscriber_;
 
   //Callback Func
   void XavSubCallback(const ros2_msg::msg::Xav2lane::SharedPtr msg);
   void ImageSubCallback(const sensor_msgs::msg::Image::SharedPtr msg);
-  void rearImageSubCallback(const sensor_msgs::msg::Image::SharedPtr msg);
 
   bool viewImage_;
   int waitKeyDelay_;

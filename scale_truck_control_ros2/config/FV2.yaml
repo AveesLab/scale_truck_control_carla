@@ -21,21 +21,21 @@
     params/Kp_d: 2.0
     params/Ki_d: 0.2
 
-    Calibration/f_matrix/a: 300.10805843346054
+    Calibration/f_matrix/a: 1.0
     Calibration/f_matrix/b: 0.
     Calibration/f_matrix/c: 320.
     Calibration/f_matrix/d: 0.
-    Calibration/f_matrix/e: 329.10805843346054
+    Calibration/f_matrix/e: 1.0
     Calibration/f_matrix/f: 240. 
     Calibration/f_matrix/g: 0.
     Calibration/f_matrix/h: 0.
     Calibration/f_matrix/i: 1.
 
-    Calibration/f_dist_coef/a: -0.34335984453339752
-    Calibration/f_dist_coef/b: 0.14676511736197059
+    Calibration/f_dist_coef/a: 0.
+    Calibration/f_dist_coef/b: 0.
     Calibration/f_dist_coef/c: 0.
     Calibration/f_dist_coef/d: 0.
-    Calibration/f_dist_coef/e: -0.032260115806245951
+    Calibration/f_dist_coef/e: 0.
 
     ROI/dynamic_roi: true
     ROI/width: 640

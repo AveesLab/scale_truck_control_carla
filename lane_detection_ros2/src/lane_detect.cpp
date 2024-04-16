@@ -14,8 +14,6 @@ LaneDetector::LaneDetector()
   int XavSubQueueSize;
   std::string ImageSubTopicName;
   int ImageSubQueueSize;
-  std::string rearImageSubTopicName;
-  int rearImageSubQueueSize;
 
   std::string XavPubTopicName;
   int XavPubQueueSize;
@@ -27,8 +25,6 @@ LaneDetector::LaneDetector()
   this->get_parameter_or("subscribers/xavier_to_lane/queue_size", XavSubQueueSize, 1);
   this->get_parameter_or("subscribers/image_to_lane/topic", ImageSubTopicName, std::string("usb_cam/image_raw"));
   this->get_parameter_or("subscribers/image_to_lane/queue_size", ImageSubQueueSize, 1);
-  this->get_parameter_or("subscribers/rearImage_to_lane/topic", rearImageSubTopicName, std::string("rear_cam/image_raw"));
-  this->get_parameter_or("subscribers/rearImage_to_lane/queue_size", rearImageSubQueueSize, 1);
 
   /****************************/
   /* Ros Topic Publish Option */
@@ -45,7 +41,6 @@ LaneDetector::LaneDetector()
 
   ImageSubscriber_ = this->create_subscription<sensor_msgs::msg::Image>(ImageSubTopicName, qos, std::bind(&LaneDetector::ImageSubCallback, this, std::placeholders::_1));
 
-  rearImageSubscriber_ = this->create_subscription<sensor_msgs::msg::Image>(rearImageSubTopicName, rearImageSubQueueSize, std::bind(&LaneDetector::rearImageSubCallback, this, std::placeholders::_1));
 
   /***********************/
   /* Ros Topic Publisher */
@@ -129,45 +124,8 @@ int height = 480;  // 이미지 높이
   this->get_parameter_or("ROI/front_cam/extra_up",extra_up[0], 0);
   this->get_parameter_or("ROI/front_cam/extra_down",extra_down[0], 0);
 
-  this->get_parameter_or("ROI/wide_right/top_gap",t_gap[1], 0.886f);
-  this->get_parameter_or("ROI/wide_right/bot_gap",b_gap[1], 0.078f);
-  this->get_parameter_or("ROI/wide_right/top_height",t_height[1], 0.903f);
-  this->get_parameter_or("ROI/wide_right/bot_height",b_height[1], 0.528f);
-  this->get_parameter_or("ROI/wide_right/extra_f",f_extra[1], 0.0f);
-  this->get_parameter_or("ROI/wide_right/extra_b",b_extra[1], 0.0f);
-  this->get_parameter_or("ROI/wide_right/extra_up",extra_up[1], 0);
-  this->get_parameter_or("ROI/wide_right/extra_down",extra_down[1], 0);
-
-  this->get_parameter_or("ROI/wide_left/top_gap",t_gap[2], 0.886f);
-  this->get_parameter_or("ROI/wide_left/bot_gap",b_gap[2], 0.078f);
-  this->get_parameter_or("ROI/wide_left/top_height",t_height[2], 0.903f);
-  this->get_parameter_or("ROI/wide_left/bot_height",b_height[2], 0.528f);
-  this->get_parameter_or("ROI/wide_left/extra_f",f_extra[2], 0.0f);
-  this->get_parameter_or("ROI/wide_left/extra_b",b_extra[2], 0.0f);
-  this->get_parameter_or("ROI/wide_left/extra_up",extra_up[2], 0);
-  this->get_parameter_or("ROI/wide_left/extra_down",extra_down[2], 0);
-
-  this->get_parameter_or("ROI/rear_cam/top_gap",t_gap[3], 0.405f);
-  this->get_parameter_or("ROI/rear_cam/bot_gap",b_gap[3], 0.17f);
-  this->get_parameter_or("ROI/rear_cam/top_height",t_height[3], 0.99f);
-  this->get_parameter_or("ROI/rear_cam/bot_height",b_height[3], 0.47f);
-  this->get_parameter_or("ROI/rear_cam/extra_f",f_extra[3], 1.0f);
-  this->get_parameter_or("ROI/rear_cam/extra_b",b_extra[3], 10.0f);
-  this->get_parameter_or("ROI/rear_cam/extra_up",extra_up[3], 140);
-  this->get_parameter_or("ROI/rear_cam/extra_down",extra_down[3], 180);
-
-  this->get_parameter_or("ROI/test/top_gap",t_gap[4], 0.405f);
-  this->get_parameter_or("ROI/test/bot_gap",b_gap[4], 0.17f);
-  this->get_parameter_or("ROI/test/top_height",t_height[4], 0.99f);
-  this->get_parameter_or("ROI/test/bot_height",b_height[4], 0.47f);
-  this->get_parameter_or("ROI/test/extra_f",f_extra[4], 1.0f);
-  this->get_parameter_or("ROI/test/extra_b",b_extra[4], 10.0f);
-  this->get_parameter_or("ROI/test/extra_up",extra_up[4], 140);
-  this->get_parameter_or("ROI/test/extra_down",extra_down[4], 180);
-
   this->get_parameter_or("threshold/box_size", Threshold_box_size_, 51);
   this->get_parameter_or("threshold/box_offset", Threshold_box_offset_, 50);
-
   distance_ = 0;
 
   corners_.resize(4);
@@ -424,27 +382,6 @@ void LaneDetector::ImageSubCallback(const sensor_msgs::msg::Image::SharedPtr msg
   }
 }
 
-void LaneDetector::rearImageSubCallback(const sensor_msgs::msg::Image::SharedPtr msg)
-{
-  Mat frame_;
-  cv_bridge::CvImagePtr rear_cam_image;
-  try{
-    rear_cam_image = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::BGR8);
-  } catch (cv_bridge::Exception& e) {
-    RCLCPP_ERROR(this->get_logger(), "cv_bridge exception : %s", e.what());
-  }
-
-  if(!rear_cam_image->image.empty()) {
-    rearImageHeader_ = msg->header;
-    rearCamImageCopy_ = rear_cam_image->image.clone();
-    frame_ = camImageCopy_;
-    rearImageStatus_ = true;
-
-    rear_cam_new_frame_arrived = true;
-    rear_cam_condition_variable.notify_one();
-  }
-}
-
 int LaneDetector::arrMaxIdx(int hist[], int start, int end, int Max) {
   int max_index = -1;
   int max_val = 0;
@@ -690,13 +627,6 @@ Mat LaneDetector::detect_lines_sliding_window(Mat _frame, bool _view) {
   int Rlane_base = arrMaxIdx(hist, mid_point, width-100, width); // mid ~ w-140
   int cluster_num = 2;
   std::vector<int> maxIndices;
-//
-//  // 곡선에서 차선변경 완료될 경우 arrMaxIdx 고정 범위에서 벗어남
-//  if(E_flag != true && E2_flag != true) {
-//    maxIndices = clusterHistogram(hist, cluster_num);    
-//    Llane_base = maxIndices[0];
-//    Rlane_base = maxIndices[1];
-//  }
 
   int Llane_current = Llane_base;
   int Rlane_current = Rlane_base;
@@ -979,12 +909,6 @@ Mat LaneDetector::draw_lane(Mat _sliding_frame, Mat _frame) {
   double diffTime;
 
   trans = getPerspectiveTransform(fROIwarpCorners_, fROIcorners_);
- // if (imageStatus_ && TEST) {
- //   trans = getPerspectiveTransform(test_warpCorners_, test_corners_);
- // }
- // else {
- //   trans = getPerspectiveTransform(warpCorners_, corners_);
- // }
   _frame.copyTo(new_frame);
 
   vector<Point> left_point;
