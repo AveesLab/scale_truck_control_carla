@@ -29,17 +29,17 @@ float CACC_sumo::calc_speed()
     
     if(abs(spacing_err) <= 1.0) { // speed mode
         t_speed = cur_vel_ + myGapControlGainGap * spacing_err + myGapControlGainGapDot * speed_err;
-        RCLCPP_INFO(this->get_logger(), "Speed Mode, spaing_err : %f, speed_err : %f",spacing_err,speed_err);
+        //RCLCPP_INFO(this->get_logger(), "Speed Mode, spaing_err : %f, speed_err : %f",spacing_err,speed_err);
         return t_speed;
     }
     else if(spacing_err < -3.0) { //collision avoidance mode
         t_speed = cur_vel_ + myCollisionAvoidanceGainGap * spacing_err + myCollisionAvoidanceGainGapDot * speed_err;
-        RCLCPP_INFO(this->get_logger(), "collision avoidance mode, spaing_err : %f, speed_err : %f",spacing_err,speed_err);
+        //RCLCPP_INFO(this->get_logger(), "collision avoidance mode, spaing_err : %f, speed_err : %f",spacing_err,speed_err);
         return t_speed;
     }
     else { // Gap closing mode
         t_speed = cur_vel_ + myGapClosingControlGainGap * spacing_err + myGapClosingControlGainGapDot*speed_err;
-        RCLCPP_INFO(this->get_logger(), " Gap closing mode, spaing_err : %f, speed_err : %f",spacing_err,speed_err);
+        //RCLCPP_INFO(this->get_logger(), " Gap closing mode, spaing_err : %f, speed_err : %f",spacing_err,speed_err);
         return t_speed;
     }
 
