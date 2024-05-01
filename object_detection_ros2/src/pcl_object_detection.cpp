@@ -54,7 +54,7 @@ PclObjectDetection::PclObjectDetection(
   std::function<void(const sensor_msgs::msg::PointCloud2::SharedPtr)> subscription_callback = std::bind(&PclObjectDetection::cloud_callback,
       this, std::placeholders::_1);
   subscription_ = this->create_subscription<sensor_msgs::msg::PointCloud2>(
-        "carla/radar",
+        "carla/lidar",
         sensor_qos,
         subscription_callback);
 
