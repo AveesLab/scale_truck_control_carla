@@ -72,6 +72,11 @@ install(TARGETS
   lane_detect_node
   DESTINATION lib/${PROJECT_NAME}
 )
+install(TARGETS 
+  lane_detect  # This is your shared library
+  DESTINATION lib/${PROJECT_NAME}
+)
+
 install(DIRECTORY
   include/
   DESTINATION include

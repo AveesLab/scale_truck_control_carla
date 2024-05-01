@@ -12,10 +12,10 @@
 
 using namespace std::chrono_literals;
 using std::placeholders::_1;
-class Controller : public rclcpp::Node
+class CACC_sumo : public rclcpp::Node
 {
 public:
-    Controller();
+    CACC_sumo();
     int Index_;
     float tx_vel_ = 0.0;
     float tx_dist_;
@@ -27,32 +27,32 @@ public:
 
     bool emergency_stop_ = false;
     
-    ros2_msg::msg::Ocr2lrc pub_msg_;
-    std_msgs::msg::Float32 control_msg_;
-    float Kp_dist_ = 0.8; // 2.0; //0.8;
-    float Kd_dist_ = 0.03; //0.05;
-    float Kp_throttle_ = 2.4; // 2.0; //0.8;
-    float Ki_throttle_ = 0.8; // 0.4; //10.0;
-    float Ka_throttle_ = 0.01;
-    float Kf_throttle_ = 1.0;  // feed forward const.
-    float Kp_brake_;
-    float Ki_brake_;
-    float Ka_brake_;
-    float Kf_brake_;
-    //float dt_ = 0.1;
+    float des_spacing = 0.0f;
+    float spacing_err = 0.0f;
+    float speed_err = 0.0f;
+    float time_gap = 0.5f;
+    float front_dis = 0.0f;
+    float front_v = 0.0f;
+    float accel = 0.0f;
+    float target_speed = 0.0f;
+    float myGapClosingControlGainGap = 0.45f;
+    float myGapClosingControlGainGapDot = 0.25f;
+    float myCollisionAvoidanceGainGap = 0.45f;
+    float myCollisionAvoidanceGainGapDot = 0.25f;
+    float myGapControlGainGap = 0.45f;
+    float myGapControlGainGapDot = 0.25f;
 
 private:
     void LrcCallback(const ros2_msg::msg::Lrc2ocr::SharedPtr msg);
-    void topic_callback(const std_msgs::msg::String::SharedPtr msg);
-    void SetSpeed();
-    void Throttle_PID(double dt_, float tar_vel, float current_vel);
-    void Brake_PID(double dt_, float tar_vel, float current_vel);
     void velocity_callback(const std_msgs::msg::Float32::SharedPtr msg);
+    void accel_callback(const std_msgs::msg::Float32::SharedPtr msg);
+    void calc_param();
+    float calc_speed(); 
     rclcpp::TimerBase::SharedPtr timer_;
-    rclcpp::Publisher<ros2_msg::msg::Ocr2lrc>::SharedPtr publisher_;
-    rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr ControlPublisher;
+    rclcpp::Publisher<ros2_msg::msg::Lrc2ocr>::SharedPtr publisher_;
     rclcpp::Subscription<ros2_msg::msg::Lrc2ocr>::SharedPtr subscriber_;
     rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr VelocitySubscriber;
+    rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr AccelSubscriber;
 };
 
 //float tar_vel, float current_vel

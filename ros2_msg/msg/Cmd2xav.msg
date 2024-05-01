@@ -40,3 +40,5 @@ uint8 fv1_r_bbox_ready
 
 uint8 fv2_bbox_ready
 uint8 fv2_r_bbox_ready
+
+bool emergency_flag

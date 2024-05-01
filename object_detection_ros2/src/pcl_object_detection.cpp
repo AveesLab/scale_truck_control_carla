@@ -321,8 +321,8 @@ void PclObjectDetection::cloud_callback(const sensor_msgs::msg::PointCloud2::Con
 
         std::vector<pcl::PointIndices> cluster_indices;
         pcl::EuclideanClusterExtraction<pcl::PointXYZ> ec;
-        ec.setClusterTolerance(0.1);
-        ec.setMinClusterSize(100);
+        ec.setClusterTolerance(0.08); // 0.1
+        ec.setMinClusterSize(10); // 100
         ec.setMaxClusterSize(600);
         ec.setSearchMethod(tree);
         ec.setInputCloud(input_cloud);

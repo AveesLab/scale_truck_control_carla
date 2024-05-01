@@ -82,7 +82,12 @@ def generate_launch_description():
             executable='talker', 
             output='screen')
 
-
+    cacc_sumo_node=Node(
+            package='cacc_sumo', 
+            namespace='FV2', 
+            name='cacc_sumo', 
+            executable='cacc_sumo', 
+            output='screen')
 
     ld = LaunchDescription()
     
@@ -92,4 +97,5 @@ def generate_launch_description():
     ld.add_action(control_node)
     ld.add_action(lrc_node)
     ld.add_action(speed_control_node)
+    ld.add_action(cacc_sumo_node)
     return ld
