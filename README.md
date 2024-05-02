@@ -35,6 +35,7 @@ docker exec -it world /bin/bash
 ```
 cd /home/ros2_ws
 source /opt/ros/galactic/setup.bash
+source ./install/setup.bash
 ros2 launch scale_truck_control_ros2 LV.launch.py
 ```
 > Second terminal
@@ -47,6 +48,7 @@ docker exec -it world /bin/bash
 ```
 cd /home/ros2_ws
 source /opt/ros/galactic/setup.bash
+source ./install/setup.bash
 ros2 launch scale_truck_control_ros2 FV1.launch.py
 ```
 > Third terminal
@@ -59,6 +61,7 @@ docker exec -it world /bin/bash
 ```
 cd /home/ros2_ws
 source /opt/ros/galactic/setup.bash
+source ./install/setup.bash
 ros2 launch scale_truck_control_ros2 FV2.launch.py
 ```
 
