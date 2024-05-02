@@ -30,7 +30,7 @@ colcon build --symlink-install
 # Docker exec
 docker start world
 xhost +
-docker exec world /bin/bash
+docker exec -it world /bin/bash
 ```
 ```
 cd /home/ros2_ws
@@ -42,7 +42,7 @@ ros2 launch scale_truck_control_ros2 LV.launch.py
 # Docker exec
 docker start world
 xhost +
-docker exec world /bin/bash
+docker exec -it world /bin/bash
 ```
 ```
 cd /home/ros2_ws
@@ -54,7 +54,7 @@ ros2 launch scale_truck_control_ros2 FV1.launch.py
 # Docker exec
 docker start world
 xhost +
-docker exec world /bin/bash
+docker exec -it world /bin/bash
 ```
 ```
 cd /home/ros2_ws
