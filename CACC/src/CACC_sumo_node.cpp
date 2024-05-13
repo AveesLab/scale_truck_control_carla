@@ -13,8 +13,13 @@ CACC_sumo::CACC_sumo()
   VelocitySubscriber = this->create_subscription<std_msgs::msg::Float32>("velocity_info",1,std::bind(&CACC_sumo::velocity_callback, this, _1));
   AccelSubscriber = this->create_subscription<std_msgs::msg::Float32>("accel_info",1,std::bind(&CACC_sumo::velocity_callback, this, _1));
   publisher_ = this->create_publisher<ros2_msg::msg::Lrc2ocr>("plan2ctr_msg", qos_profile);
+  ShutdownSubscriber = this->create_subscription<std_msgs::msg::String>("/shutdown_topic", 10, std::bind(&CACC_sumo::shutdown_callback, this, std::placeholders::_1));
 }   
 
+void CACC_sumo::shutdown_callback(const std_msgs::msg::String::SharedPtr msg) {
+    RCLCPP_INFO(this->get_logger(), "Received shutdown message: '%s'", msg->data.c_str());
+    rclcpp::shutdown(); // 종료 명령
+}
 
 void CACC_sumo::calc_param() 
 {

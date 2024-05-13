@@ -10,6 +10,7 @@
 #include "ros2_msg/msg/lrc2ocr.hpp"
 #include "std_msgs/msg/float32.hpp"
 
+
 using namespace std::chrono_literals;
 using std::placeholders::_1;
 class CACC_sumo : public rclcpp::Node
@@ -46,6 +47,7 @@ private:
     void LrcCallback(const ros2_msg::msg::Lrc2ocr::SharedPtr msg);
     void velocity_callback(const std_msgs::msg::Float32::SharedPtr msg);
     void accel_callback(const std_msgs::msg::Float32::SharedPtr msg);
+    void shutdown_callback(const std_msgs::msg::String::SharedPtr msg);
     void calc_param();
     float calc_speed(); 
     rclcpp::TimerBase::SharedPtr timer_;
@@ -53,6 +55,7 @@ private:
     rclcpp::Subscription<ros2_msg::msg::Lrc2ocr>::SharedPtr subscriber_;
     rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr VelocitySubscriber;
     rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr AccelSubscriber;
+    rclcpp::Subscription<std_msgs::msg::String>::SharedPtr ShutdownSubscriber;
 };
 
 //float tar_vel, float current_vel
