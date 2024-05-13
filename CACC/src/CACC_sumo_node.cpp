@@ -16,7 +16,7 @@ CACC_sumo::CACC_sumo()
   ShutdownSubscriber = this->create_subscription<std_msgs::msg::String>("/shutdown_topic", 10, std::bind(&CACC_sumo::shutdown_callback, this, std::placeholders::_1));
 }   
 
-void CACC_sum::shutdown_callback(const std_msgs::msg::String::SharedPtr msg) {
+void CACC_sumo::shutdown_callback(const std_msgs::msg::String::SharedPtr msg) {
     RCLCPP_INFO(this->get_logger(), "Received shutdown message: '%s'", msg->data.c_str());
     rclcpp::shutdown(); // 종료 명령
 }
