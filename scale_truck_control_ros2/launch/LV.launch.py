@@ -88,7 +88,8 @@ def generate_launch_description():
             namespace='LV', 
             name='cacc_sumo', 
             executable='cacc_sumo', 
-            output='screen')
+            output='screen',
+            on_exit=launch.actions.Shutdown())
 
 
     ld = LaunchDescription()
