@@ -45,7 +45,7 @@ def generate_launch_description():
 
     object_node=Node(
             package="object_detection_ros2",
-            namespace='LV',
+            namespace='truck0',
             executable="object_detection_ros2_node",
             output={
             'stdout': 'screen',
@@ -54,7 +54,7 @@ def generate_launch_description():
 
     lane_detection_node=Node(
             package='lane_detection_ros2',
-            namespace='LV',
+            namespace='truck0',
             name='LaneDetector', # .yaml에 명시.
             executable='lane_detect_node',
             output='screen',
@@ -62,7 +62,7 @@ def generate_launch_description():
 
     control_node=Node(
             package='scale_truck_control_ros2', 
-            namespace='LV', 
+            namespace='truck0', 
             name='scale_truck_control_node', 
             executable='control_node', 
             output='screen',
@@ -70,7 +70,7 @@ def generate_launch_description():
 
     lrc_node=Node(
             package='scale_truck_control_ros2', 
-            namespace='LV', 
+            namespace='truck0', 
             name='LRC', 
             executable='lrc_node', 
             parameters = [ros_param_file, {"LrcParams/lrc_index" : 10}],
@@ -78,14 +78,14 @@ def generate_launch_description():
 
     speed_control_node=Node(
             package='speed_control', 
-            namespace='LV', 
+            namespace='truck0', 
             name='speed_control', 
             executable='talker', 
             output='screen')
 
     cacc_sumo_node=Node(
             package='cacc_sumo', 
-            namespace='LV', 
+            namespace='truck0', 
             name='cacc_sumo', 
             executable='cacc_sumo', 
             output='screen',
