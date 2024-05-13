@@ -47,6 +47,7 @@ private:
     void LrcCallback(const ros2_msg::msg::Lrc2ocr::SharedPtr msg);
     void velocity_callback(const std_msgs::msg::Float32::SharedPtr msg);
     void accel_callback(const std_msgs::msg::Float32::SharedPtr msg);
+    void shutdown_callback(const std_msgs::msg::String::SharedPtr msg);
     void calc_param();
     float calc_speed(); 
     rclcpp::TimerBase::SharedPtr timer_;
