@@ -7,7 +7,7 @@ Controller::Controller()
   auto qos_profile = rclcpp::QoS(rclcpp::KeepLast(10));
 
   subscriber_ = this->create_subscription<ros2_msg::msg::Lrc2ocr>(
-    "lrc2ocr_msg", 
+    "plan2ctr_msg", 
     qos_profile,
     std::bind(&Controller::LrcCallback, this, _1)
   );
@@ -29,6 +29,7 @@ void Controller::LrcCallback(const ros2_msg::msg::Lrc2ocr::SharedPtr msg)
   tx_dist_ = msg->cur_dist;
   tx_tdist_ = msg->tar_dist;
   tx_vel_ = msg->tar_vel;
+  emergency_stop_ = msg->emergency_flag;
  // cur_vel_ = msg->cur_vel;
  // SetSpeed();
  // publisher_->publish(pub_msg_);
@@ -56,37 +57,23 @@ void Controller::Throttle_PID(double dt_, float tar_vel, float current_vel)
   float ref_vel = 0.f;
   pub_msg_.cur_vel = current_vel;
 
-  if(Index_ != 10) {
-    dist_err = tx_dist_ - tx_tdist_;    
-    P_dist_err = Kp_dist_ * dist_err;
-    D_dist_err = (Kd_dist_ * ((dist_err - prev_dist_err) / dt_ )); 
-    u_dist = P_dist_err + D_dist_err + tar_vel;
-
-    // sat(u(k))  saturation start 
-    if(u_dist > 90.0) u_dist_k = 90.0;
-    else if(u_dist <= 0) u_dist_k = 0;
-    else u_dist_k = u_dist;
-
-    ref_vel = u_dist_k;
-  } else {
-    ref_vel = tar_vel;
-  }
-
-  pub_msg_.ref_vel = ref_vel;
+  ref_vel = tar_vel;
+  pub_msg_.ref_vel = tar_vel;
   
-  if(ref_vel >= 0)
+  if(ref_vel >= 0 && emergency_stop_ == false)
   {
     err = ref_vel - current_vel;
     P_err = Kp_throttle_ * err;
     I_err += Ki_throttle_ * err * dt_;
     A_err += Ka_throttle_ * ((prev_u_k - prev_u) / dt_);
 
+/*
     if(tar_vel <= 0){
       P_err = 0;
       I_err = 0;
       A_err = 0;
     }
-  
+  */
     u = P_err + I_err + A_err + ref_vel * Kf_throttle_;
 
     
@@ -102,30 +89,34 @@ void Controller::Throttle_PID(double dt_, float tar_vel, float current_vel)
     prev_u = u;
     prev_dist_err = dist_err;
   }
+  
   else
   {
-    err = ref_vel - current_vel;
-    P_err = Kp_brake_ * err;
-    I_err += Ki_brake_ * err * dt_;
-    A_err += Ka_brake_ * ((prev_u_b - prev_u) / dt_);
-
-    if(tar_vel <= 0){
-      P_err = 0;
-      I_err = 0;
-      A_err = 0;
-    }
-  
-    u = P_err + I_err + A_err + ref_vel * Kf_brake_;
-
-    if(u > -2.0) u_b = -2.0;
-    else if(u <= 0) u_b = 0;
-    else u_b = u;
-  
-    pub_msg_.u_k = u_b;
-    prev_u_b = u_b;
-    prev_u = u;
-    prev_dist_err = dist_err;
-
+//    err = ref_vel - current_vel;
+//    P_err = Kp_brake_ * err;
+//    I_err += Ki_brake_ * err * dt_;
+//    A_err += Ka_brake_ * ((prev_u_b - prev_u) / dt_);
+//
+//    if(tar_vel <= 0){
+//      P_err = 0;
+//      I_err = 0;
+//      A_err = 0;
+//    }
+//  
+//    u = P_err + I_err + A_err + ref_vel * Kf_brake_;
+//
+//    if(u > -2.0) u_b = -2.0;
+//    else if(u <= 0) u_b = -1.0;
+//    else u_b = u;
+//  
+//    pub_msg_.u_k = u_b;
+//    prev_u_b = u_b;
+//    prev_u = u;
+//    prev_dist_err = dist_err;
+    u_k = -1.0f;
+    pub_msg_.u_k = u_k;
+    control_msg_.data = u_k;
+    ControlPublisher->publish(control_msg_);
   }
 }
 

@@ -65,8 +65,11 @@ void LocalRC::init(){
 
   XavSubscriber_ = this->create_subscription<ros2_msg::msg::Xav2lrc>(XavSubTopicName, XavSubQueueSize, std::bind(&LocalRC::XavCallback, this, std::placeholders::_1));
 
-  if (index_ == 11 || index_ == 12){
+  if (index_ == 11){
     LVSubscriber_ = this->create_subscription<ros2_msg::msg::Lrc2xav>(LVSubTopicName, LVSubQueueSize, std::bind(&LocalRC::LVCallback, this, std::placeholders::_1));
+  }
+  else if (index_ == 12) {
+    LVSubscriber_ = this->create_subscription<ros2_msg::msg::Lrc2xav>(std::string("/fv12fv2_msg"), LVSubQueueSize, std::bind(&LocalRC::LVCallback, this, std::placeholders::_1));
   }
 
   /************************/
@@ -77,12 +80,15 @@ void LocalRC::init(){
   if (index_ == 10) {
     FVPublisher_ = this->create_publisher<ros2_msg::msg::Lrc2xav>(FVPubTopicName, FVPubQueueSize);
   }
+  else if(index_ == 11) {
+    FVPublisher_ = this->create_publisher<ros2_msg::msg::Lrc2xav>(std::string("/fv12fv2_msg"), FVPubQueueSize);
+  }
 
   /*********************/
   /* spin & udp thread */
   /*********************/
   lrcThread_ = std::thread(&LocalRC::communicate, this);
-  if (index_ == 10){
+  if (index_ == 10 || index_ == 11){
     udpThread_ = std::thread(&LocalRC::radio, this);
   }
 
@@ -101,13 +107,14 @@ void LocalRC::radio()
   while(isNodeRunning()){
     {
       std::scoped_lock lock(data_mutex_);
-      lv_data_.tar_vel = tar_vel_;
-      lv_data_.tar_dist = tar_dist_;
+      lv_data_.tar_vel = cur_vel_;  // current speed
+      lv_data_.tar_dist = tar_dist_; // contstant time_gap
+      lv_data_.emergency_flag = emergency_flag_;
     }
 
     FVPublisher_->publish(lv_data_); 
     
-    std::this_thread::sleep_for(std::chrono::milliseconds(2));
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
   }
 }
 
@@ -125,6 +132,7 @@ void LocalRC::rosPub(){
     ocr.tar_dist = tar_dist_;
     ocr.tar_vel = tar_vel_;
     ocr.est_vel = est_vel_;
+    ocr.emergency_flag = emergency_flag_;
   }
   XavPublisher_->publish(xav);
   OcrPublisher_->publish(ocr);
@@ -225,6 +233,7 @@ void LocalRC::XavCallback(const ros2_msg::msg::Xav2lrc::SharedPtr msg)
   if(index_ == 10){  //only LV LRC
     tar_vel_ = msg->tar_vel;
     tar_dist_ = msg->tar_dist;
+    emergency_flag_ = msg->emergency_flag;
   }
 
 //  /* delay time */
@@ -268,6 +277,7 @@ void LocalRC::LVCallback(const ros2_msg::msg::Lrc2xav::SharedPtr msg)
   std::scoped_lock lock(data_mutex_);
   tar_vel_ = msg->tar_vel;
   tar_dist_ = msg->tar_dist;
+  emergency_flag_ = msg->emergency_flag;
 }
 
 

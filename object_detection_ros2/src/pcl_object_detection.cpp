@@ -54,7 +54,7 @@ PclObjectDetection::PclObjectDetection(
   std::function<void(const sensor_msgs::msg::PointCloud2::SharedPtr)> subscription_callback = std::bind(&PclObjectDetection::cloud_callback,
       this, std::placeholders::_1);
   subscription_ = this->create_subscription<sensor_msgs::msg::PointCloud2>(
-        "carla/radar",
+        "carla/lidar",
         sensor_qos,
         subscription_callback);
 
@@ -321,8 +321,8 @@ void PclObjectDetection::cloud_callback(const sensor_msgs::msg::PointCloud2::Con
 
         std::vector<pcl::PointIndices> cluster_indices;
         pcl::EuclideanClusterExtraction<pcl::PointXYZ> ec;
-        ec.setClusterTolerance(0.1);
-        ec.setMinClusterSize(100);
+        ec.setClusterTolerance(0.08); // 0.1
+        ec.setMinClusterSize(10); // 100
         ec.setMaxClusterSize(600);
         ec.setSearchMethod(tree);
         ec.setInputCloud(input_cloud);

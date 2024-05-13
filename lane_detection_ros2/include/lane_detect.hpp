@@ -1,5 +1,8 @@
 #pragma once
-
+#include "cuda_runtime_api.h"
+#include "logging.h"
+#include "common.hpp"
+#include "macros.h"
 // C++
 #include <iostream>
 #include <string>
@@ -22,13 +25,7 @@
 #include "std_msgs/msg/header.hpp"
 
 #include <opencv2/opencv.hpp>
-//#include <opencv2/highgui/highgui.hpp>
-//#include <opencv2/cudaarithm.hpp>
-//#include <opencv2/cudafeatures2d.hpp>
-//#include <opencv2/core/cuda.hpp>
-//#include <opencv2/cudaimgproc.hpp>
-//#include <opencv2/cudawarping.hpp>
-//#include <opencv2/cudafilters.hpp>
+
 
 //ROS2
 #include "rclcpp/rclcpp.hpp"
@@ -37,11 +34,17 @@
 #include "std_msgs/msg/float32.hpp"
 #include "spline.h"
 
+
+
+
 #define _GUN_SOURCE
 
 using namespace cv;
 using namespace std;
 using namespace std::chrono_literals;
+#define DEVICE 0  // GPU id
+
+
 
 namespace LaneDetect {
 
@@ -77,8 +80,25 @@ public:
   float log_el_ = 0.0f;
   float vel_ = 0.0f;
 
+
+
+   int fcount = 0;
+    int vis_h = 480;
+    int vis_w = 640;
+    int col_sample_w = 8;
+        char *trtModelStream{ nullptr };
+    size_t size{ 0 };
+    IRuntime* runtime;
+    ICudaEngine* engine;
+    IExecutionContext* context;
+    std::vector<int> tusimple_row_anchor
+            { 126, 132, 138, 144, 150, 156, 162, 168, 174, 180, 186, 192, 198, 204, 210, 216, 222, 228, 234, 240, 246, 252, 258, 264, 270, 276, 282};
+
 private:
   void LoadParams(void);
+  void doInference(IExecutionContext& context, float* input, float* output, int batchSize);
+  void softmax_mul(float* x, float* y, int rows, int cols, int chan);
+  void argmax(float* x, float* y, int rows, int cols, int chan);
   int arrMaxIdx(int hist[], int start, int end, int Max);
   std::vector<int> clusterHistogram(int* hist, int clusters);
   Mat polyfit(vector<int> x_val, vector<int> y_val);
@@ -91,7 +111,7 @@ private:
   Mat drawBox(Mat frame);
   void controlSteer();
   void clear_release();
-
+  tk::spline cspline();
   cv::Point2f transformPoint(const cv::Point& pt, const cv::Mat& camera_matrix, const cv::Mat& dist_coeffs); 
 
   //Publisher
@@ -100,10 +120,12 @@ private:
   //Subscriber
   rclcpp::Subscription<ros2_msg::msg::Xav2lane>::SharedPtr XavSubscriber_;
   rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr ImageSubscriber_;
+  rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr rearImageSubscriber_;
 
   //Callback Func
   void XavSubCallback(const ros2_msg::msg::Xav2lane::SharedPtr msg);
   void ImageSubCallback(const sensor_msgs::msg::Image::SharedPtr msg);
+  void rearImageSubCallback(const sensor_msgs::msg::Image::SharedPtr msg);
 
   bool viewImage_;
   int waitKeyDelay_;

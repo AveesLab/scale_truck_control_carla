@@ -1,6 +1,22 @@
+
 #include "lane_detect.hpp"
 
+#define BATCH_SIZE 1
+static const int INPUT_C = 3;
+static const int INPUT_H = 288;
+static const int INPUT_W = 800;
+static const int OUTPUT_C = 101;
+static const int OUTPUT_H = 27;
+static const int OUTPUT_W = 4;
+static const int OUTPUT_SIZE = OUTPUT_C * OUTPUT_H * OUTPUT_W;
+const char* INPUT_BLOB_NAME = "data";
+const char* OUTPUT_BLOB_NAME = "prob";
+static Logger gLogger;
 namespace LaneDetect {
+
+
+
+
 
 LaneDetector::LaneDetector()
        : Node("LaneDetector", rclcpp::NodeOptions()
@@ -14,6 +30,8 @@ LaneDetector::LaneDetector()
   int XavSubQueueSize;
   std::string ImageSubTopicName;
   int ImageSubQueueSize;
+  std::string rearImageSubTopicName;
+  int rearImageSubQueueSize;
 
   std::string XavPubTopicName;
   int XavPubQueueSize;
@@ -25,6 +43,8 @@ LaneDetector::LaneDetector()
   this->get_parameter_or("subscribers/xavier_to_lane/queue_size", XavSubQueueSize, 1);
   this->get_parameter_or("subscribers/image_to_lane/topic", ImageSubTopicName, std::string("usb_cam/image_raw"));
   this->get_parameter_or("subscribers/image_to_lane/queue_size", ImageSubQueueSize, 1);
+  this->get_parameter_or("subscribers/rearImage_to_lane/topic", rearImageSubTopicName, std::string("rear_cam/image_raw"));
+  this->get_parameter_or("subscribers/rearImage_to_lane/queue_size", rearImageSubQueueSize, 1);
 
   /****************************/
   /* Ros Topic Publish Option */
@@ -41,6 +61,7 @@ LaneDetector::LaneDetector()
 
   ImageSubscriber_ = this->create_subscription<sensor_msgs::msg::Image>(ImageSubTopicName, qos, std::bind(&LaneDetector::ImageSubCallback, this, std::placeholders::_1));
 
+  rearImageSubscriber_ = this->create_subscription<sensor_msgs::msg::Image>(rearImageSubTopicName, rearImageSubQueueSize, std::bind(&LaneDetector::rearImageSubCallback, this, std::placeholders::_1));
 
   /***********************/
   /* Ros Topic Publisher */
@@ -75,6 +96,21 @@ LaneDetector::LaneDetector()
   this->get_parameter_or("Calibration/f_dist_coef/d",f_dist_coef[3], 0.);
   this->get_parameter_or("Calibration/f_dist_coef/e",f_dist_coef[4], -2.1908791800876997e-02);
 
+  this->get_parameter_or("Calibration/r_matrix/a",r_matrix[0], 326.31389227574556);
+  this->get_parameter_or("Calibration/r_matrix/b",r_matrix[1], 0.);
+  this->get_parameter_or("Calibration/r_matrix/c",r_matrix[2], 320.);
+  this->get_parameter_or("Calibration/r_matrix/d",r_matrix[3], 0.);
+  this->get_parameter_or("Calibration/r_matrix/e",r_matrix[4], 326.31389227574556);
+  this->get_parameter_or("Calibration/r_matrix/f",r_matrix[5], 240.);
+  this->get_parameter_or("Calibration/r_matrix/g",r_matrix[6], 0.);
+  this->get_parameter_or("Calibration/r_matrix/h",r_matrix[7], 0.);
+  this->get_parameter_or("Calibration/r_matrix/i",r_matrix[8], 1.);
+
+  this->get_parameter_or("Calibration/r_dist_coef/a",r_dist_coef[0], -0.33295846454356126);
+  this->get_parameter_or("Calibration/r_dist_coef/b",r_dist_coef[1], 0.12386827336557986);
+  this->get_parameter_or("Calibration/r_dist_coef/c",r_dist_coef[2], 0.);
+  this->get_parameter_or("Calibration/r_dist_coef/d",r_dist_coef[3], 0.);
+  this->get_parameter_or("Calibration/r_dist_coef/e",r_dist_coef[4], -0.022565312043601477);
 
   /*** front cam calibration  ***/
   f_camera_matrix = Mat::eye(3, 3, CV_64FC1);
@@ -83,11 +119,17 @@ LaneDetector::LaneDetector()
   f_dist_coeffs = (Mat1d(1, 5) << f_dist_coef[0], f_dist_coef[1], f_dist_coef[2], f_dist_coef[3], f_dist_coef[4]);
   initUndistortRectifyMap(f_camera_matrix, f_dist_coeffs, Mat(), f_camera_matrix, Size(640, 480), CV_32FC1, f_map1_, f_map2_);
 
+  /*** rear cam calibration  ***/
+  r_camera_matrix = Mat::eye(3, 3, CV_64FC1);
+  r_dist_coeffs = Mat::zeros(1, 5, CV_64FC1);
+  r_camera_matrix = (Mat1d(3, 3) << r_matrix[0], r_matrix[1], r_matrix[2], r_matrix[3], r_matrix[4], r_matrix[5], r_matrix[6], r_matrix[7], r_matrix[8]);
+  r_dist_coeffs = (Mat1d(1, 5) << r_dist_coef[0], r_dist_coef[1], r_dist_coef[2], r_dist_coef[3], r_dist_coef[4]);
+  initUndistortRectifyMap(r_camera_matrix, r_dist_coeffs, Mat(), r_camera_matrix, Size(640, 480), CV_32FC1, r_map1_, r_map2_);
 
   map1_ = f_map1_.clone();
   map2_ = f_map2_.clone();
-int width = 640;   // 이미지 너비
-int height = 480;  // 이미지 높이
+
+
 
   /********** PID control ***********/
   prev_err_ = 0;
@@ -124,8 +166,45 @@ int height = 480;  // 이미지 높이
   this->get_parameter_or("ROI/front_cam/extra_up",extra_up[0], 0);
   this->get_parameter_or("ROI/front_cam/extra_down",extra_down[0], 0);
 
+  this->get_parameter_or("ROI/wide_right/top_gap",t_gap[1], 0.886f);
+  this->get_parameter_or("ROI/wide_right/bot_gap",b_gap[1], 0.078f);
+  this->get_parameter_or("ROI/wide_right/top_height",t_height[1], 0.903f);
+  this->get_parameter_or("ROI/wide_right/bot_height",b_height[1], 0.528f);
+  this->get_parameter_or("ROI/wide_right/extra_f",f_extra[1], 0.0f);
+  this->get_parameter_or("ROI/wide_right/extra_b",b_extra[1], 0.0f);
+  this->get_parameter_or("ROI/wide_right/extra_up",extra_up[1], 0);
+  this->get_parameter_or("ROI/wide_right/extra_down",extra_down[1], 0);
+
+  this->get_parameter_or("ROI/wide_left/top_gap",t_gap[2], 0.886f);
+  this->get_parameter_or("ROI/wide_left/bot_gap",b_gap[2], 0.078f);
+  this->get_parameter_or("ROI/wide_left/top_height",t_height[2], 0.903f);
+  this->get_parameter_or("ROI/wide_left/bot_height",b_height[2], 0.528f);
+  this->get_parameter_or("ROI/wide_left/extra_f",f_extra[2], 0.0f);
+  this->get_parameter_or("ROI/wide_left/extra_b",b_extra[2], 0.0f);
+  this->get_parameter_or("ROI/wide_left/extra_up",extra_up[2], 0);
+  this->get_parameter_or("ROI/wide_left/extra_down",extra_down[2], 0);
+
+  this->get_parameter_or("ROI/rear_cam/top_gap",t_gap[3], 0.405f);
+  this->get_parameter_or("ROI/rear_cam/bot_gap",b_gap[3], 0.17f);
+  this->get_parameter_or("ROI/rear_cam/top_height",t_height[3], 0.99f);
+  this->get_parameter_or("ROI/rear_cam/bot_height",b_height[3], 0.47f);
+  this->get_parameter_or("ROI/rear_cam/extra_f",f_extra[3], 1.0f);
+  this->get_parameter_or("ROI/rear_cam/extra_b",b_extra[3], 10.0f);
+  this->get_parameter_or("ROI/rear_cam/extra_up",extra_up[3], 140);
+  this->get_parameter_or("ROI/rear_cam/extra_down",extra_down[3], 180);
+
+  this->get_parameter_or("ROI/test/top_gap",t_gap[4], 0.405f);
+  this->get_parameter_or("ROI/test/bot_gap",b_gap[4], 0.17f);
+  this->get_parameter_or("ROI/test/top_height",t_height[4], 0.99f);
+  this->get_parameter_or("ROI/test/bot_height",b_height[4], 0.47f);
+  this->get_parameter_or("ROI/test/extra_f",f_extra[4], 1.0f);
+  this->get_parameter_or("ROI/test/extra_b",b_extra[4], 10.0f);
+  this->get_parameter_or("ROI/test/extra_up",extra_up[4], 140);
+  this->get_parameter_or("ROI/test/extra_down",extra_down[4], 180);
+
   this->get_parameter_or("threshold/box_size", Threshold_box_size_, 51);
   this->get_parameter_or("threshold/box_offset", Threshold_box_offset_, 50);
+
   distance_ = 0;
 
   corners_.resize(4);
@@ -145,10 +224,14 @@ int height = 480;  // 이미지 높이
   top_height[0] = height_ * t_height[0];
   bot_height[0] = height_ * b_height[0];
 
-  fROIcorners_[0] = Point2f(top_gap[0]+f_extra[0], bot_height[0]);
-  fROIcorners_[1] = Point2f((width_ - top_gap[0])+f_extra[0], bot_height[0]);
-  fROIcorners_[2] = Point2f(bot_gap[0]+b_extra[0], top_height[0]);
-  fROIcorners_[3] = Point2f((width_ - bot_gap[0])+b_extra[0], top_height[0]);
+  fROIcorners_[0] = Point2f(top_gap[0]+f_extra[0], bot_height[0]); // left top
+  
+  fROIcorners_[1] = Point2f((width_ - top_gap[0])+f_extra[0], bot_height[0]); // right top
+  
+  fROIcorners_[2] = Point2f(bot_gap[0]+b_extra[0], top_height[0]); // left bot
+  
+  fROIcorners_[3] = Point2f((width_ - bot_gap[0])+b_extra[0], top_height[0]); //right bottom
+  
   
   wide_extra_upside_[0] = extra_up[0];
   wide_extra_downside_[0] = extra_down[0];
@@ -158,6 +241,98 @@ int height = 480;  // 이미지 높이
   fROIwarpCorners_[2] = Point2f(wide_extra_downside_[0], height_);
   fROIwarpCorners_[3] = Point2f(width_ - wide_extra_downside_[0], height_);
   /*** front cam ROI setting ***/
+
+  /*** Wide Right ROI setting ***/
+  rROIcorners_.resize(4);
+  rROIwarpCorners_.resize(4);
+
+  top_gap[1] = width_ * t_gap[1];
+  bot_gap[1] = width_ * b_gap[1];
+  top_height[1] = height_ * t_height[1];
+  bot_height[1] = height_ * b_height[1];
+
+  rROIcorners_[0] = Point2f(top_gap[1]+f_extra[1], bot_height[1]);
+  rROIcorners_[1] = Point2f((width_ - top_gap[1])+f_extra[1], bot_height[1]);
+  rROIcorners_[2] = Point2f(bot_gap[1]+b_extra[1], top_height[1]);
+  rROIcorners_[3] = Point2f((width_ - bot_gap[1])+b_extra[1], top_height[1]);
+
+  wide_extra_upside_[1] = extra_up[1];
+  wide_extra_downside_[1] = extra_down[1];
+
+  rROIwarpCorners_[0] = Point2f(wide_extra_upside_[1], 0.0);
+  rROIwarpCorners_[1] = Point2f(width_ - wide_extra_upside_[1], 0.0);
+  rROIwarpCorners_[2] = Point2f(wide_extra_downside_[1], height_);
+  rROIwarpCorners_[3] = Point2f(width_ - wide_extra_downside_[1], height_);
+  /*** Wide Right ROI setting ***/
+
+  /*** Wide left ROI setting ***/
+  lROIcorners_.resize(4);
+  lROIwarpCorners_.resize(4);
+
+  top_gap[2] = width_ * t_gap[2];
+  bot_gap[2] = width_ * b_gap[2];
+  top_height[2] = height_ * t_height[2];
+  bot_height[2] = height_ * b_height[2];
+
+  lROIcorners_[0] = Point2f(top_gap[2]+f_extra[2], bot_height[2]);
+  lROIcorners_[1] = Point2f((width_ - top_gap[2])+f_extra[2], bot_height[2]);
+  lROIcorners_[2] = Point2f(bot_gap[2]+b_extra[2], top_height[2]);
+  lROIcorners_[3] = Point2f((width_ - bot_gap[2])+b_extra[2], top_height[2]);
+
+  wide_extra_upside_[2] = extra_up[2];
+  wide_extra_downside_[2] = extra_down[2];
+
+  lROIwarpCorners_[0] = Point2f(wide_extra_upside_[2], 0.0);
+  lROIwarpCorners_[1] = Point2f(width_ - wide_extra_upside_[2], 0.0);
+  lROIwarpCorners_[2] = Point2f(wide_extra_downside_[2], height_);
+  lROIwarpCorners_[3] = Point2f(width_ - wide_extra_downside_[2], height_);
+  /*** Wide left ROI setting ***/
+
+  /*** rear cam ROI setting ***/
+  rearROIcorners_.resize(4);
+  rearROIwarpCorners_.resize(4);
+
+  top_gap[3] = width_ * t_gap[3]; 
+  bot_gap[3] = width_ * b_gap[3];
+  top_height[3] = height_ * t_height[3];
+  bot_height[3] = height_ * b_height[3];
+
+  rearROIcorners_[0] = Point2f(top_gap[3]+f_extra[3], bot_height[3]);
+  rearROIcorners_[1] = Point2f((width_ - top_gap[3])+f_extra[3], bot_height[3]);
+  rearROIcorners_[2] = Point2f(bot_gap[3]+b_extra[3], top_height[3]);
+  rearROIcorners_[3] = Point2f((width_ - bot_gap[3])+b_extra[3], top_height[3]);
+  
+  wide_extra_upside_[3] = extra_up[3];
+  wide_extra_downside_[3] = extra_down[3];
+  
+  rearROIwarpCorners_[0] = Point2f(wide_extra_upside_[3], 0.0);
+  rearROIwarpCorners_[1] = Point2f(width_ - wide_extra_upside_[3], 0.0);
+  rearROIwarpCorners_[2] = Point2f(wide_extra_downside_[3], height_);
+  rearROIwarpCorners_[3] = Point2f(width_ - wide_extra_downside_[3], height_);
+  /*** rear cam ROI setting ***/
+
+  /*** front cam ROI 2.5m setting ***/
+  testROIcorners_.resize(4);
+  testROIwarpCorners_.resize(4);
+
+  top_gap[4] = width_ * t_gap[4]; 
+  bot_gap[4] = width_ * b_gap[4];
+  top_height[4] = height_ * t_height[4];
+  bot_height[4] = height_ * b_height[4];
+
+  testROIcorners_[0] = Point2f(top_gap[4]+f_extra[4], bot_height[4]);
+  testROIcorners_[1] = Point2f((width_ - top_gap[4])+f_extra[4], bot_height[4]);
+  testROIcorners_[2] = Point2f(bot_gap[4]+b_extra[4], top_height[4]);
+  testROIcorners_[3] = Point2f((width_ - bot_gap[4])+b_extra[4], top_height[4]);
+  
+  wide_extra_upside_[4] = extra_up[4];
+  wide_extra_downside_[4] = extra_down[4];
+  
+  testROIwarpCorners_[0] = Point2f(wide_extra_upside_[4], 0.0);
+  testROIwarpCorners_[1] = Point2f(width_ - wide_extra_upside_[4], 0.0);
+  testROIwarpCorners_[2] = Point2f(wide_extra_downside_[4], height_);
+  testROIwarpCorners_[3] = Point2f(width_ - wide_extra_downside_[4], height_);
+  /*** front cam ROI 2.5m setting ***/
 
   /*  Synchronisation         */
   cam_new_frame_arrived = false;
@@ -188,7 +363,29 @@ int height = 480;  // 이미지 높이
   this->get_parameter_or("params/b2/b", b2_[1], 0.0575);
   this->get_parameter_or("params/b2/c", b2_[2], 0.17);
   LoadParams();
+  std::ifstream file("lane_det.engine", std::ios::binary);
+        if (file.good()) {
+            file.seekg(0, file.end);
+            size = file.tellg();
+            file.seekg(0, file.beg);
+            trtModelStream = new char[size];
+            assert(trtModelStream);
+            file.read(trtModelStream, size);
+            file.close();
+        }
+        else {
+            RCLCPP_INFO(this->get_logger(), "NONO");
+        }
+            runtime = createInferRuntime(gLogger);
+            assert(runtime != nullptr);
+            engine = runtime->deserializeCudaEngine(trtModelStream, size);
+            assert(engine != nullptr);
+            context = engine->createExecutionContext();
+            assert(context != nullptr);
+            delete[] trtModelStream;
+        // Initialize subscriber to the image topic
 
+        RCLCPP_INFO(this->get_logger(), "Initialize Finish.");
   isNodeRunning_ = true;
   lanedetect_Thread = std::thread(&LaneDetector::lanedetectInThread, this);
 
@@ -216,6 +413,98 @@ LaneDetector::~LaneDetector(void)
   clear_release();
   RCLCPP_INFO(this->get_logger(), "Stop.");
 }
+void LaneDetector::doInference(IExecutionContext& context, float* input, float* output, int batchSize) {
+    const ICudaEngine& engine = context.getEngine();
+
+    // Pointers to input and output device buffers to pass to engine.
+    // Engine requires exactly IEngine::getNbBindings() number of buffers.
+    assert(engine.getNbBindings() == 2);
+    void* buffers[2];
+
+    // In order to bind the buffers, we need to know the names of the input and output tensors.
+    // Note that indices are guaranteed to be less than IEngine::getNbBindings()
+    const int inputIndex = engine.getBindingIndex(INPUT_BLOB_NAME);
+    const int outputIndex = engine.getBindingIndex(OUTPUT_BLOB_NAME);
+
+    // Create GPU buffers on device
+    CHECK(cudaMalloc(&buffers[inputIndex], batchSize * INPUT_C * INPUT_H * INPUT_W * sizeof(float)));
+    CHECK(cudaMalloc(&buffers[outputIndex], batchSize * OUTPUT_SIZE * sizeof(float)));
+
+    // Create stream
+    cudaStream_t stream;
+    CHECK(cudaStreamCreate(&stream));
+
+    // DMA input batch data to device, infer on the batch asynchronously, and DMA output back to host
+    CHECK(cudaMemcpyAsync(buffers[inputIndex], input, batchSize * INPUT_C * INPUT_H * INPUT_W * sizeof(float),
+          cudaMemcpyHostToDevice, stream));
+    context.enqueue(batchSize, buffers, stream, nullptr);
+    CHECK(cudaMemcpyAsync(output, buffers[outputIndex], batchSize * OUTPUT_SIZE * sizeof(float),
+          cudaMemcpyDeviceToHost, stream));
+    cudaStreamSynchronize(stream);
+
+    // Release stream and buffers
+    cudaStreamDestroy(stream);
+    CHECK(cudaFree(buffers[inputIndex]));
+    CHECK(cudaFree(buffers[outputIndex]));
+}
+
+void LaneDetector::softmax_mul(float* x, float* y, int rows, int cols, int chan)
+{
+    for(int i = 0, wh = rows * cols; i < rows; i++)
+    {
+        for(int j = 0; j < cols; j++)
+        {
+            float sum = 0.0;
+            float sum_tmp = 0.0;
+            float thresh_hold = 0.9;
+            float expect = 0.0;
+            for(int k = 0; k < chan - 1; k++)
+            {
+                
+                x[k * wh + i * cols + j] = exp(x[k * wh + i * cols + j]);
+                sum += x[k * wh + i * cols + j];
+            }
+           
+            for(int k = 0; k < chan - 1; k++)
+            {
+                x[k * wh + i * cols + j] /= sum;
+                if(x[k * wh + i * cols + j] > 0.1 && !option_) sum_tmp += x[k * wh + i * cols + j];
+            }
+            
+            for(int k = 0; k < chan - 1; k++)
+            {
+                x[k * wh + i * cols + j] = x[k * wh + i * cols + j] * (k + 1);
+                expect += x[k * wh + i * cols + j];
+            }
+
+            if(sum_tmp < thresh_hold && !option_ )  y[i * cols + j] = 1;
+            else y[i * cols + j] = expect;
+        }
+    }
+}
+void LaneDetector::argmax(float* x, float* y, int rows, int cols, int chan)
+{
+    for(int i = 0,wh = rows * cols; i < rows; i++)
+    {
+        for(int j = 0; j < cols; j++)
+        {
+            int max = -10000000;
+            int max_ind = -1;
+            for(int k = 0; k < chan; k++)
+            {
+                if(x[k * wh + i * cols + j] > max)
+                {
+                    max = x[k * wh + i * cols + j];
+                    max_ind = k;
+                }
+            }
+            y[i * cols + j] = max_ind;
+        }
+    }
+}
+
+
+
 
 void LaneDetector::lanedetectInThread()
 {
@@ -271,6 +560,9 @@ void LaneDetector::lanedetectInThread()
       xav.est_dist = est_dist_;
       xav.est_vel = est_vel_;
       steer_.data = AngleDegree_;
+//      gettimeofday(&cur_time, NULL);
+//      xav.stamp_sec = cur_time.tv_sec;
+//      xav.stamp_usec = cur_time.tv_usec;
       SteerPublisher_->publish(steer_);
       XavPublisher_->publish(xav);
     }
@@ -356,6 +648,19 @@ void LaneDetector::XavSubCallback(const ros2_msg::msg::Xav2lane::SharedPtr msg)
     w_ = static_cast<int>(bottomRight.x - topLeft.x);
     h_ = static_cast<int>(bottomRight.y - topLeft.y);
   }
+
+  if(rearImageStatus_) {
+    cur_vel_ = msg->cur_vel;
+
+    cv::Point2f topLeft = transformPoint(cv::Point(msg->rx, msg->ry),r_camera_matrix, r_dist_coeffs);
+    cv::Point2f bottomRight = transformPoint(cv::Point(msg->rx + msg->rw, msg->ry + msg->rh), r_camera_matrix, r_dist_coeffs);
+
+    r_name_ = msg->r_name;
+    rx_ = static_cast<int>(topLeft.x);
+    ry_ = static_cast<int>(topLeft.y);
+    rw_ = static_cast<int>(bottomRight.x - topLeft.x);
+    rh_ = static_cast<int>(bottomRight.y - topLeft.y);
+  }
 }
 
 void LaneDetector::ImageSubCallback(const sensor_msgs::msg::Image::SharedPtr msg)
@@ -370,6 +675,21 @@ void LaneDetector::ImageSubCallback(const sensor_msgs::msg::Image::SharedPtr msg
   }
 
   if(!cam_image->image.empty()) {
+//    /* delay time */
+//    gettimeofday(&end_time, NULL);
+//    imageHeader_ = msg->header;
+//    diff_time += ((end_time.tv_sec - imageHeader_.stamp.sec) * 1000.0) + ((end_time.tv_usec - imageHeader_.stamp.nanosec/1000.0) / 1000.0);
+//     
+//    cnt++;
+//
+//    CycleTime_ = diff_time / (double)cnt;
+//    RCLCPP_INFO(this->get_logger(), "Cycle Time        : %3.3f ms\n", CycleTime_);
+//
+//    if (cnt > 3000){
+//      diff_time = 0.0;
+//      cnt = 0;
+//    }
+//    /* delay time */
 
     camImageCopy_ = cam_image->image.clone();
     prev_img = camImageCopy_;
@@ -379,6 +699,27 @@ void LaneDetector::ImageSubCallback(const sensor_msgs::msg::Image::SharedPtr msg
   }
   else if(!prev_img.empty()) {
     camImageCopy_ = prev_img;
+  }
+}
+
+void LaneDetector::rearImageSubCallback(const sensor_msgs::msg::Image::SharedPtr msg)
+{
+  Mat frame_;
+  cv_bridge::CvImagePtr rear_cam_image;
+  try{
+    rear_cam_image = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::BGR8);
+  } catch (cv_bridge::Exception& e) {
+    RCLCPP_ERROR(this->get_logger(), "cv_bridge exception : %s", e.what());
+  }
+
+  if(!rear_cam_image->image.empty()) {
+    rearImageHeader_ = msg->header;
+    rearCamImageCopy_ = rear_cam_image->image.clone();
+    frame_ = camImageCopy_;
+    rearImageStatus_ = true;
+
+    rear_cam_new_frame_arrived = true;
+    rear_cam_condition_variable.notify_one();
   }
 }
 
@@ -484,7 +825,12 @@ std::vector<int> LaneDetector::clusterHistogram(int* hist, int cluster_num) {
     result.push_back(cluster.maxValueIndex);
   }
 
-
+  //    if(viewImage_){
+   //     namedWindow("Histogram Clusters");
+   //     moveWindow("Histogram Clusters", 710, 700);
+   //     cv::imshow("Histogram Clusters", cluster_frame);
+    //    cv::waitKey(2);
+  //    }
 
   return result;
 }
@@ -623,21 +969,89 @@ Mat LaneDetector::detect_lines_sliding_window(Mat _frame, bool _view) {
     window_height = height / n_windows;
   }
   
+//  int E2lane_base = arrMaxIdx(hist, 0, 140, width);
   int Llane_base = arrMaxIdx(hist, 100, mid_point, width); // 140 ~ mid
   int Rlane_base = arrMaxIdx(hist, mid_point, width-100, width); // mid ~ w-140
+//  int Elane_base = arrMaxIdx(hist, width-140, width, width);
+  int E2lane_base = 0, Elane_base = 0;
   int cluster_num = 2;
   std::vector<int> maxIndices;
+//
+//  // 곡선에서 차선변경 완료될 경우 arrMaxIdx 고정 범위에서 벗어남
+//  if(E_flag != true && E2_flag != true) {
+//    maxIndices = clusterHistogram(hist, cluster_num);    
+//    Llane_base = maxIndices[0];
+//    Rlane_base = maxIndices[1];
+//  }
+  if (E_flag == true || E2_flag == true) {
+    cluster_num = 3;
+    maxIndices = clusterHistogram(hist, cluster_num);    
+    
+    // check for difference less than or equal to 60
+    for (size_t i = 0; i < maxIndices.size(); ++i) {
+        if(maxIndices[i] == -1) {
+          cluster_num = 2;
+        }   
+        for (size_t j = i+1; j < maxIndices.size(); ++j) {
+          if (maxIndices[i] != -1 && maxIndices[j] != -1) {
+            if (std::abs(maxIndices[i] - maxIndices[j]) <= 60) {
+                cluster_num = 2;
+                break;
+            }
+          }
+        }
+    }
+    if (cluster_num == 2) {
+        maxIndices = clusterHistogram(hist, cluster_num);    
+    }
+  
+    if (cluster_num == 3) {
+      if (E_flag == true) {
+        Llane_base = maxIndices[0];
+        Rlane_base = maxIndices[1];
+        Elane_base = maxIndices[2];
+      }
+      else if (E2_flag == true) {
+        E2lane_base = maxIndices[0];
+        Llane_base = maxIndices[1];
+        Rlane_base = maxIndices[2];
+      }
+    } 
+    else if (cluster_num == 2) {
+      if (E_flag == true) {
+        Llane_base = -1;
+        Rlane_base = maxIndices[0];
+        Elane_base = maxIndices[1];
+      }
+      else if (E2_flag == true) {
+        E2lane_base = maxIndices[0];
+        Llane_base = maxIndices[1];
+        Rlane_base = -1;
+      }
+    }
+  }
 
   int Llane_current = Llane_base;
   int Rlane_current = Rlane_base;
+  int Elane_current = Elane_base;
+  int E2lane_current = E2lane_base;
+
   int L_prev =  Llane_current;
   int R_prev =  Rlane_current;
+  int E_prev =  Elane_current;
+  int E2_prev =  E2lane_current;
   int L_gap = 0;
   int R_gap = 0;
+  int E_gap = 0;
+  int E2_gap = 0;
   static int prev_L_gap = 0;
   static int prev_R_gap = 0;
+  static int prev_E_gap = 0;
+  static int prev_E2_gap = 0;
   static int prev_Llane_current = 0;
   static int prev_Rlane_current = 0;
+  static int prev_Elane_current = 0;
+  static int prev_E2lane_current = 0;
 
   unsigned int index;
 
@@ -653,16 +1067,34 @@ Mat LaneDetector::detect_lines_sliding_window(Mat _frame, bool _view) {
     prev_Rlane_current = 0;
     prev_R_gap = 0;
   }
+  if (Elane_base == -1) {
+//    RCLCPP_INFO(this->get_logger(), "Not Detection Elane_Base");
+    E_flag = false;
+    prev_Elane_current = 0;
+    prev_E_gap = 0;
+  } 
+  if (E2lane_base == -1) {
+//    RCLCPP_INFO(this->get_logger(), "Not Detection E2lane_Base");
+    E2_flag = false;
+    prev_E2lane_current = 0;
+    prev_E2_gap = 0;
+  } 
 //  RCLCPP_INFO(this->get_logger(), "E2lane | Llane | Rlane | Elane | E2_flag | E_flag : %d | %d | %d | %d | %d | %d \n", E2lane_base, Llane_base, Rlane_base, Elane_base, E2_flag, E_flag);
 
   for (int window = 0; window < n_windows; window++) {
     int  Ly_pos = height - (window + 1) * window_height - 1; // win_y_low , win_y_high = win_y_low - window_height
     int  Ry_pos = height - (window + 1) * window_height - 1;
+    int  Ey_pos = height - (window + 1) * window_height - 1;
+    int  E2y_pos = height - (window + 1) * window_height - 1;
     int  Ly_top = height - window * window_height;
     int  Ry_top = height - window * window_height;
+    int  Ey_top = height - window * window_height;
+    int  E2y_top = height - window * window_height;
 
     int  Lx_pos = Llane_current - margin; // win_xleft_low, win_xleft_high = win_xleft_low + margin*2
     int  Rx_pos = Rlane_current - margin; // win_xrignt_low, win_xright_high = win_xright_low + margin*2
+    int  Ex_pos = Elane_current - margin; // win_xrignt_low, win_xright_high = win_xright_low + margin*2
+    int  E2x_pos = E2lane_current - margin; // win_xrignt_low, win_xright_high = win_xright_low + margin*2
     if (_view) {
       if(L_flag){
         rectangle(result, \
@@ -675,10 +1107,24 @@ Mat LaneDetector::detect_lines_sliding_window(Mat _frame, bool _view) {
           //Scalar(100, 50, 255), 1);
           Scalar(255, 50, 100), 1);
       }
+      if(E_flag){
+        rectangle(result, \
+          Rect(Ex_pos, Ey_pos, window_width, window_height), \
+          //Scalar(50, 255, 255), 1);
+          Scalar(255, 50, 100), 1);
+      }
+      if(E2_flag){
+        rectangle(result, \
+          Rect(E2x_pos, E2y_pos, window_width, window_height), \
+          //Scalar(50, 255, 255), 1);
+          Scalar(255, 50, 100), 1);
+      }
     }
     int nZ_y, nZ_x;
     good_left_inds.clear();
     good_right_inds.clear();
+    good_extra_inds.clear();
+    good_extra2_inds.clear();
 
     for (int index = static_cast<int>(nonZero.total() - 1); index >= 0; index--) {
       nZ_y = nonZero.at<Point>(index).y;
@@ -708,8 +1154,46 @@ Mat LaneDetector::detect_lines_sliding_window(Mat _frame, bool _view) {
             result.at<Vec3b>(nonZero.at<Point>(index))[0] = 255;
             result.at<Vec3b>(nonZero.at<Point>(index))[1] = 0;
             result.at<Vec3b>(nonZero.at<Point>(index))[2] = 0;
+   //         result.at<Vec3b>(nonZero.at<Point>(index))[0] = 0;
+   //         result.at<Vec3b>(nonZero.at<Point>(index))[1] = 0;
+   //         result.at<Vec3b>(nonZero.at<Point>(index))[2] = 255;
           }
           good_right_inds.push_back(index);
+        }
+      }
+
+      if(E_flag){
+        if ((nZ_y >= (Ey_pos)) && \
+          (nZ_y > (distance)) && \
+          (nZ_y < Ey_top) && \
+          (nZ_x >= Ex_pos) && \
+          (nZ_x < (Ex_pos + window_width))) {
+          if (_view) {
+            result.at<Vec3b>(nonZero.at<Point>(index))[0] = 255;
+            result.at<Vec3b>(nonZero.at<Point>(index))[1] = 0;
+            result.at<Vec3b>(nonZero.at<Point>(index))[2] = 0;
+//            result.at<Vec3b>(nonZero.at<Point>(index))[0] = 0;
+//            result.at<Vec3b>(nonZero.at<Point>(index))[1] = 255;
+//            result.at<Vec3b>(nonZero.at<Point>(index))[2] = 255;
+          }
+          good_extra_inds.push_back(index);
+        }
+      }
+      if(E2_flag){
+        if ((nZ_y >= (E2y_pos)) && \
+          (nZ_y > (distance)) && \
+          (nZ_y < E2y_top) && \
+          (nZ_x >= E2x_pos) && \
+          (nZ_x < (E2x_pos + window_width))) {
+          if (_view) {
+            result.at<Vec3b>(nonZero.at<Point>(index))[0] = 255;
+            result.at<Vec3b>(nonZero.at<Point>(index))[1] = 0;
+            result.at<Vec3b>(nonZero.at<Point>(index))[2] = 0;
+//            result.at<Vec3b>(nonZero.at<Point>(index))[0] = 0;
+//            result.at<Vec3b>(nonZero.at<Point>(index))[1] = 255;
+//            result.at<Vec3b>(nonZero.at<Point>(index))[2] = 255;
+          }
+          good_extra2_inds.push_back(index);
         }
       }
     }
@@ -721,6 +1205,10 @@ Mat LaneDetector::detect_lines_sliding_window(Mat _frame, bool _view) {
     vector<int> Llane_y;
     vector<int> Rlane_x;
     vector<int> Rlane_y;
+    vector<int> Elane_x;
+    vector<int> Elane_y;
+    vector<int> E2lane_x;
+    vector<int> E2lane_y;
 
 
     if(L_flag) {
@@ -811,6 +1299,95 @@ Mat LaneDetector::detect_lines_sliding_window(Mat _frame, bool _view) {
       }
     }
 
+
+    if(E_flag) {
+      if ((good_extra_inds.size() > (size_t)min_pix)) {
+        _size = (unsigned int)(good_extra_inds.size());
+        for (int i = Ey_top - 1 ; i >= Ey_pos ; i--)
+        {
+          int Ey_sum = 0;
+          int count = 0;
+          for (index = 0; index < _size; index++) {
+            int j = nonZero.at<Point>(good_extra_inds.at(index)).y;
+            if(i == j)
+            {
+              Ey_sum += nonZero.at<Point>(good_extra_inds.at(index)).x;
+              count++;
+              Esum += nonZero.at<Point>(good_extra_inds.at(index)).x;
+            }
+          }
+          if(count != 0)
+          {
+            extra_x_.insert(extra_x_.end(), Ey_sum/count);
+            extra_y_.insert(extra_y_.end(), i);
+            Elane_x.insert(Elane_x.end(), Ey_sum/count);
+            Elane_y.insert(Elane_y.end(), i);
+          } else {
+            Elane_x.insert(Elane_x.end(), -1);
+            Elane_y.insert(Elane_y.end(), i);
+          }
+        }
+        Elane_current = Esum / _size;
+  if(window == 0) {
+          prev_Elane_current = Elane_base;
+  }
+      } 
+      else {
+//        if (window == 0 && prev_Elane_current != 0) {
+//          Elane_current = prev_Elane_current;
+//        } else if (window == 1 && prev_E_gap != 0) {
+//          Elane_current += prev_E_gap;
+//        } else {
+//          Elane_current += (E_gap);
+//  }
+        Elane_current += (E_gap);
+      }
+    }
+
+    if (E2_flag) {
+      if ((good_extra2_inds.size() > (size_t)min_pix)) {
+        _size = (unsigned int)(good_extra2_inds.size());
+        for (int i = E2y_top - 1 ; i >= E2y_pos ; i--)
+        {
+          int E2y_sum = 0;
+          int count = 0;
+          for (index = 0; index < _size; index++) {
+            int j = nonZero.at<Point>(good_extra2_inds.at(index)).y;
+            if(i == j)
+            {
+              E2y_sum += nonZero.at<Point>(good_extra2_inds.at(index)).x;
+              count++;
+              E2sum += nonZero.at<Point>(good_extra2_inds.at(index)).x;
+            }
+          }
+          if(count != 0)
+          {
+            extra2_x_.insert(extra2_x_.end(), E2y_sum/count);
+            extra2_y_.insert(extra2_y_.end(), i);
+            E2lane_x.insert(E2lane_x.end(), E2y_sum/count);
+            E2lane_y.insert(E2lane_y.end(), i);
+          } else {
+            E2lane_x.insert(E2lane_x.end(), -1);
+            E2lane_y.insert(E2lane_y.end(), i);
+          }
+        }
+        E2lane_current = E2sum / _size;
+  if(window == 0) {
+          prev_E2lane_current = E2lane_base;
+  }
+      } 
+      else {
+//        if (window == 0 && prev_E2lane_current != 0) {
+//          E2lane_current = prev_E2lane_current;
+//        } else if (window == 1 && prev_E2_gap != 0) {
+//          E2lane_current += prev_E2_gap;
+//        } else {
+//          E2lane_current += (E2_gap);
+//  }
+        E2lane_current += (E2_gap);
+      }
+    }
+
     if (window != 0) {  
       if (Rlane_current != R_prev) {
         R_gap = (Rlane_current - R_prev);
@@ -822,6 +1399,18 @@ Mat LaneDetector::detect_lines_sliding_window(Mat _frame, bool _view) {
         L_gap = (Llane_current - L_prev);
   if(window == 1) {
     prev_L_gap = L_gap;
+  }
+      }
+      if((Elane_current != E_prev) && E_flag) {
+        E_gap = (Elane_current - E_prev);
+  if(window == 1) {
+    prev_E_gap = E_gap;
+  }
+      }
+      if ((E2lane_current != E2_prev) && E2_flag) {
+        E2_gap = (E2lane_current - E2_prev);
+  if(window == 1) {
+    prev_E2_gap = E2_gap;
   }
       }
     }
@@ -840,10 +1429,31 @@ Mat LaneDetector::detect_lines_sliding_window(Mat _frame, bool _view) {
 
       }
     }
-  
+    /* center2  */
+    if ((Rsum != 0) && (Esum != 0)) {
+      for (int i = 0; i < Rlane_x.size() ; i++)
+      {
+        if((Rlane_x.at(i) != -1) && (Elane_x.at(i) != -1)) {
+          center2_x_.insert(center2_x_.end(), (Rlane_x.at(i)+Elane_x.at(i)) / 2 );
+          center2_y_.insert(center2_y_.end(), Rlane_y.at(i));
+        }
+      }
+    } 
+    /* center3  */
+    if ((E2sum != 0) && (Lsum != 0)) {
+      for (int i = 0; i < E2lane_x.size() ; i++)
+      {
+        if((E2lane_x.at(i) != -1) && (Llane_x.at(i) != -1)) {
+          center3_x_.insert(center3_x_.end(), (E2lane_x.at(i)+Llane_x.at(i)) / 2 );
+          center3_y_.insert(center3_y_.end(), E2lane_y.at(i));
+        }
+      }
+    } 
 
     L_prev = Llane_current;
     R_prev = Rlane_current;
+    E_prev = Elane_current;
+    E2_prev = E2lane_current;
   }
   
   if (left_x_.size() != 0) {
@@ -852,15 +1462,43 @@ Mat LaneDetector::detect_lines_sliding_window(Mat _frame, bool _view) {
   if (right_x_.size() != 0) {
     right_coef_ = polyfit(right_y_, right_x_);
   }
+  if (extra_x_.size() != 0) {
+    extra_coef_ = polyfit(extra_y_, extra_x_);
+  }
+  if (extra2_x_.size() != 0) {
+    extra2_coef_ = polyfit(extra2_y_, extra2_x_);
+  }
   
-  int center_diff_ = 999;
+  int center_diff_ = 999, center2_diff_ = 999, center3_diff_ = 999;
   //if (center_x_.size() != 0){
   if (left_x_.size() != 0 && right_x_.size() != 0){ // && !center_x_.empty() remove
     //center_coef_ = polyfit(center_y_, center_x_);
     center_coef_ = (left_coef_ + right_coef_)/2;
     center_diff_ = abs(mid_point ); // - center_x_.front() remove
   }
+ 
+  if (extra_x_.size() != 0 && right_x_.size() != 0 && !center2_x_.empty()){
+//    center2_coef_ = polyfit(center2_y_, center2_x_);
+    center2_coef_ = (right_coef_ + extra_coef_)/2;
+    center2_diff_ = abs(mid_point - center2_x_.front());
+  }
+  if (left_x_.size() != 0 && extra2_x_.size() != 0 && !center3_x_.empty()){
+//    center3_coef_ = polyfit(center3_y_, center3_x_);
+    center3_coef_ = (extra2_coef_ + left_coef_)/2;
+    center3_diff_ = abs(mid_point - center3_x_.front());
+  }
 
+//  printf("center | center2 : %d|%d\n", center_x_.front(), center2_x_.front());
+
+  if ((center_diff_!= 999 && center2_diff_!= 999) || (center_diff_!= 999 && center3_diff_!= 999)) {
+    if (center_diff_ < center2_diff_ && center_diff_ < center3_diff_) {
+      center_select_ = 1;
+    } else if (center2_diff_ < center_diff_ && center2_diff_ < center3_diff_) {
+      center_select_ = 2;
+    } else if (center3_diff_ < center_diff_ && center3_diff_ < center2_diff_) {
+      center_select_ = 3;
+    }
+  }
 
   delete[] hist;
 
@@ -909,23 +1547,53 @@ Mat LaneDetector::draw_lane(Mat _sliding_frame, Mat _frame) {
   double diffTime;
 
   trans = getPerspectiveTransform(fROIwarpCorners_, fROIcorners_);
+ // if (imageStatus_ && TEST) {
+ //   trans = getPerspectiveTransform(test_warpCorners_, test_corners_);
+ // }
+ // else {
+ //   trans = getPerspectiveTransform(warpCorners_, corners_);
+ // }
   _frame.copyTo(new_frame);
 
   vector<Point> left_point;
   vector<Point> right_point;
+  vector<Point> extra_point;
+  vector<Point> extra2_point;
   vector<Point> center_point;
+  vector<Point> center2_point;
+  vector<Point> center3_point;
+  vector<Point> lc_point;
+  vector<Point> lc2_point;
 
   vector<Point2f> left_point_f;
   vector<Point2f> right_point_f;
+  vector<Point2f> extra_point_f;
+  vector<Point2f> extra2_point_f;
   vector<Point2f> center_point_f;
+  vector<Point2f> center2_point_f;
+  vector<Point2f> center3_point_f;
+  vector<Point2f> lc_point_f;
+  vector<Point2f> lc2_point_f;
 
   vector<Point2f> warped_left_point;
   vector<Point2f> warped_right_point;
+  vector<Point2f> warped_extra_point;
+  vector<Point2f> warped_extra2_point;
   vector<Point2f> warped_center_point;
+  vector<Point2f> warped_center2_point;
+  vector<Point2f> warped_center3_point;
+  vector<Point2f> warped_lc_point;
+  vector<Point2f> warped_lc2_point;
 
   vector<Point> left_points;
   vector<Point> right_points;
+  vector<Point> extra_points;
+  vector<Point> extra2_points;
   vector<Point> center_points;
+  vector<Point> center2_points;
+  vector<Point> center3_points;
+  vector<Point> lc_points;
+  vector<Point> lc2_points;
 
   if ((!left_coef.empty()) && (!right_coef.empty())) {
     for (int i = 0; i <= height_; i++) {
@@ -1012,10 +1680,10 @@ Mat LaneDetector::draw_lane(Mat _sliding_frame, Mat _frame) {
     
     if(L_flag == true) 
       polylines(new_frame, &left_points_point, &left_points_number, 1, false, Scalar(255, 100, 100), 10);
-    if(R_flag == true)
+    if(R_flag == true && !E2_flag)
       //polylines(new_frame, &right_points_point, &right_points_number, 1, false, Scalar(100, 100, 255), 5);
       polylines(new_frame, &right_points_point, &right_points_number, 1, false, Scalar(255, 100, 100), 10);
-    if(L_flag == true && R_flag == true)
+    if(L_flag == true && R_flag == true && !E2_flag)
       polylines(new_frame, &center_points_point, &center_points_number, 1, false, Scalar(100, 255, 100), 10);
     
     left_point.clear();
@@ -1053,7 +1721,7 @@ Mat LaneDetector::draw_lane(Mat _sliding_frame, Mat _frame) {
     for (int i = 0; i < 5; i++) {
       temp_droi_point.x = (int)warped_droi_point[droi_num[i]].x;
       temp_droi_point.y = (int)warped_droi_point[droi_num[i]].y;
-      
+    
       droi_points.push_back(temp_droi_point);
       
       if(imageStatus_ && TEST) {
@@ -1061,8 +1729,8 @@ Mat LaneDetector::draw_lane(Mat _sliding_frame, Mat _frame) {
         temp_roi_point.y = (int)test_corners_[roi_num[i]].y;
       }
       else {
-        temp_roi_point.x = (int)corners_[roi_num[i]].x;
-        temp_roi_point.y = (int)corners_[roi_num[i]].y;
+        temp_roi_point.x = (int)fROIcorners_[roi_num[i]].x;
+        temp_roi_point.y = (int)fROIcorners_[roi_num[i]].y;
       }
       roi_points.push_back(temp_roi_point);
     }
@@ -1072,7 +1740,7 @@ Mat LaneDetector::draw_lane(Mat _sliding_frame, Mat _frame) {
     const Point* droi_points_point = (const cv::Point*) Mat(droi_points).data;
     int droi_points_number = Mat(droi_points).rows;
 
-    polylines(_frame, &roi_points_point, &roi_points_number, 1, false, Scalar(0, 0, 255), 5);
+    //polylines(_frame, &roi_points_point, &roi_points_number, 1, false, Scalar(0, 0, 255), 5);
     polylines(_frame, &droi_points_point, &droi_points_number, 1, false, Scalar(0, 255, 0), 5);
 
     string TEXT = "ROI";
@@ -1080,6 +1748,196 @@ Mat LaneDetector::draw_lane(Mat _sliding_frame, Mat _frame) {
     putText(_frame, TEXT, T_pos, FONT_HERSHEY_DUPLEX, 2, Scalar(0, 255, 0), 5, 8);
 
 //    return new_frame;
+  }
+
+  if ((!right_coef.empty()) && (!extra_coef.empty()) && E_flag == true) {
+    mark_ = 1;
+    tk::spline cspline_eq_ = cspline(); // s : lane2 coef
+
+    for (int i = 0; i <= height_; i++) {
+      Point temp_extra_point;
+      Point temp_center2_point;
+      Point temp_lc_point;
+
+      temp_extra_point.x = (int)((extra_coef.at<float>(2, 0) * pow(i, 2)) + (extra_coef.at<float>(1, 0) * i) + extra_coef.at<float>(0, 0));
+      temp_extra_point.y = (int)i;
+      temp_center2_point.x = (int)((center2_coef.at<float>(2, 0) * pow(i, 2)) + (center2_coef.at<float>(1, 0) * i) + center2_coef.at<float>(0, 0));
+      temp_center2_point.y = (int)i;
+      temp_lc_point.x = (int)cspline_eq_((double)i);
+      temp_lc_point.y = (int)i;
+
+      extra_point.push_back(temp_extra_point);
+      extra_point_f.push_back(temp_extra_point);
+      center2_point.push_back(temp_center2_point);
+      center2_point_f.push_back(temp_center2_point);
+      lc_point.push_back(temp_lc_point);
+      lc_point_f.push_back(temp_lc_point);
+    }
+    const Point* extra_points_point_ = (const cv::Point*) Mat(extra_point).data;
+    int extra_points_number_ = Mat(extra_point).rows;
+    const Point* center2_points_point_ = (const cv::Point*) Mat(center2_point).data;
+    int center2_points_number_ = Mat(center2_point).rows;
+    const Point* lc_points_point_ = (const cv::Point*) Mat(lc_point).data;
+    int lc_points_number_ = Mat(lc_point).rows;
+
+    polylines(_sliding_frame, &extra_points_point_, &extra_points_number_, 1, false, Scalar(255, 100, 100), 10);
+    polylines(_sliding_frame, &center2_points_point_, &center2_points_number_, 1, false, Scalar(200, 255, 200), 10);
+    polylines(_sliding_frame, &lc_points_point_, &lc_points_number_, 1, false, Scalar(255, 0, 255), 5);
+    
+    perspectiveTransform(extra_point_f, warped_extra_point, trans);
+    perspectiveTransform(center2_point_f, warped_center2_point, trans);
+    perspectiveTransform(lc_point_f, warped_lc_point, trans);
+
+    for (int i = 0; i <= height_; i++) {
+      Point temp_extra_point;
+      Point temp_center2_point;
+      Point temp_lc_point;
+
+      temp_extra_point.x = (int)warped_extra_point[i].x;
+      temp_extra_point.y = (int)warped_extra_point[i].y;
+      temp_center2_point.x = (int)warped_center2_point[i].x;
+      temp_center2_point.y = (int)warped_center2_point[i].y;
+      temp_lc_point.x = (int)warped_lc_point[i].x;
+      temp_lc_point.y = (int)warped_lc_point[i].y;
+
+      extra_points.push_back(temp_extra_point);
+      center2_points.push_back(temp_center2_point);
+      lc_points.push_back(temp_lc_point);
+    }
+
+    const Point* extra_points_point = (const cv::Point*) Mat(extra_points).data;
+    int extra_points_number = Mat(extra_points).rows;
+    const Point* center2_points_point = (const cv::Point*) Mat(center2_points).data;
+    int center2_points_number = Mat(center2_points).rows;
+    const Point* lc_points_point = (const cv::Point*) Mat(lc_points).data;
+    int lc_points_number = Mat(lc_points).rows;
+
+    Point lane_center2 = *(center2_points_point + center2_points_number - 10);
+    Point lane_lc = *(lc_points_point + lc_points_number - 10);
+
+    static Point prev_lane_center2;
+    static Point prev_lane_lc;
+
+    gettimeofday(&endTime, NULL);
+    if (!flag){
+      diffTime = (endTime.tv_sec - start_.tv_sec) + (endTime.tv_usec - start_.tv_usec)/1000000.0;
+      flag = true;
+    }
+    else{
+      diffTime = (endTime.tv_sec - startTime.tv_sec) + (endTime.tv_usec - startTime.tv_usec)/1000000.0;
+      startTime = endTime;
+    }
+    lane_center2.x = lowPassFilter(diffTime, lane_center2.x, prev_lane_center2.x);
+    lane_center2.y = lowPassFilter(diffTime, lane_center2.y, prev_lane_center2.y);
+    lane_lc.x = lowPassFilter(diffTime, lane_lc.x, prev_lane_lc.x);
+    lane_lc.y = lowPassFilter(diffTime, lane_lc.y, prev_lane_lc.y);
+
+    prev_lane_center2 = lane_center2;
+    prev_lane_lc = lane_lc;
+    
+    //polylines(new_frame, &extra_points_point, &extra_points_number, 1, false, Scalar(0, 255, 255), 5);
+    polylines(new_frame, &extra_points_point, &extra_points_number, 1, false, Scalar(255, 100, 100), 10);
+    polylines(new_frame, &center2_points_point, &center2_points_number, 1, false, Scalar(100, 255,100), 10);
+    polylines(new_frame, &lc_points_point, &lc_points_number, 1, false, Scalar(255, 0, 255), 10);
+    
+    extra_point.clear();
+    center2_point.clear();
+    lc_point.clear();
+  }  
+
+  if ((!extra2_coef.empty()) && (!left_coef.empty()) && E2_flag == true) {
+    mark_ = 2;
+    tk::spline cspline_eq_ = cspline(); // s : lane3 coef
+
+    for (int i = 0; i <= height_; i++) {
+      Point temp_extra2_point;
+      Point temp_center3_point;
+      Point temp_lc2_point;
+
+      temp_extra2_point.x = (int)((extra2_coef.at<float>(2, 0) * pow(i, 2)) + (extra2_coef.at<float>(1, 0) * i) + extra2_coef.at<float>(0, 0));
+      temp_extra2_point.y = (int)i;
+      temp_center3_point.x = (int)((center3_coef.at<float>(2, 0) * pow(i, 2)) + (center3_coef.at<float>(1, 0) * i) + center3_coef.at<float>(0, 0));
+      temp_center3_point.y = (int)i;
+      temp_lc2_point.x = (int)cspline_eq_((double)i);
+      temp_lc2_point.y = (int)i;
+
+      extra2_point.push_back(temp_extra2_point);
+      extra2_point_f.push_back(temp_extra2_point);
+      center3_point.push_back(temp_center3_point);
+      center3_point_f.push_back(temp_center3_point);
+      lc2_point.push_back(temp_lc2_point);
+      lc2_point_f.push_back(temp_lc2_point);
+    }
+    const Point* extra2_points_point_ = (const cv::Point*) Mat(extra2_point).data;
+    int extra2_points_number_ = Mat(extra2_point).rows;
+    const Point* center3_points_point_ = (const cv::Point*) Mat(center3_point).data;
+    int center3_points_number_ = Mat(center3_point).rows;
+    const Point* lc2_points_point_ = (const cv::Point*) Mat(lc2_point).data;
+    int lc2_points_number_ = Mat(lc2_point).rows;
+
+    polylines(_sliding_frame, &extra2_points_point_, &extra2_points_number_, 1, false, Scalar(255, 100, 100), 10);
+    polylines(_sliding_frame, &center3_points_point_, &center3_points_number_, 1, false, Scalar(200, 255, 200), 10);
+    polylines(_sliding_frame, &lc2_points_point_, &lc2_points_number_, 1, false, Scalar(255, 0, 255), 10);
+    
+    perspectiveTransform(extra2_point_f, warped_extra2_point, trans);
+    perspectiveTransform(center3_point_f, warped_center3_point, trans);
+    perspectiveTransform(lc2_point_f, warped_lc2_point, trans);
+
+    for (int i = 0; i <= height_; i++) {
+      Point temp_extra2_point;
+      Point temp_center3_point;
+      Point temp_lc2_point;
+
+      temp_extra2_point.x = (int)warped_extra2_point[i].x;
+      temp_extra2_point.y = (int)warped_extra2_point[i].y;
+      temp_center3_point.x = (int)warped_center3_point[i].x;
+      temp_center3_point.y = (int)warped_center3_point[i].y;
+      temp_lc2_point.x = (int)warped_lc2_point[i].x;
+      temp_lc2_point.y = (int)warped_lc2_point[i].y;
+
+      extra2_points.push_back(temp_extra2_point);
+      center3_points.push_back(temp_center3_point);
+      lc2_points.push_back(temp_lc2_point);
+    }
+
+    const Point* extra2_points_point = (const cv::Point*) Mat(extra2_points).data;
+    int extra2_points_number = Mat(extra2_points).rows;
+    const Point* center3_points_point = (const cv::Point*) Mat(center3_points).data;
+    int center3_points_number = Mat(center3_points).rows;
+    const Point* lc2_points_point = (const cv::Point*) Mat(lc2_points).data;
+    int lc2_points_number = Mat(lc2_points).rows;
+
+    Point lane_center3 = *(center3_points_point + center3_points_number - 10);
+    Point lane_lc2 = *(lc2_points_point + lc2_points_number - 10);
+
+    static Point prev_lane_center3;
+    static Point prev_lane_lc2;
+
+    gettimeofday(&endTime, NULL);
+    if (!flag){
+      diffTime = (endTime.tv_sec - start_.tv_sec) + (endTime.tv_usec - start_.tv_usec)/1000000.0;
+      flag = true;
+    }
+    else{
+      diffTime = (endTime.tv_sec - startTime.tv_sec) + (endTime.tv_usec - startTime.tv_usec)/1000000.0;
+      startTime = endTime;
+    }
+    lane_center3.x = lowPassFilter(diffTime, lane_center3.x, prev_lane_center3.x);
+    lane_center3.y = lowPassFilter(diffTime, lane_center3.y, prev_lane_center3.y);
+    lane_lc2.x = lowPassFilter(diffTime, lane_lc2.x, prev_lane_lc2.x);
+    lane_lc2.y = lowPassFilter(diffTime, lane_lc2.y, prev_lane_lc2.y);
+
+    prev_lane_center3 = lane_center3;
+    prev_lane_lc2 = lane_lc2;
+    
+    //polylines(new_frame, &extra2_points_point, &extra2_points_number, 1, false, Scalar(0, 255, 255), 5);
+    polylines(new_frame, &extra2_points_point, &extra2_points_number, 1, false, Scalar(255, 100, 100), 10);
+    polylines(new_frame, &center3_points_point, &center3_points_number, 1, false, Scalar(100, 255,100), 10);
+    polylines(new_frame, &lc2_points_point, &lc2_points_number, 1, false, Scalar(255, 0, 255), 10);
+    
+    extra2_point.clear();
+    center3_point.clear();
+    lc2_point.clear();
   }
 
   if ((left_coef.empty()) && (right_coef.empty())){
@@ -1096,8 +1954,16 @@ void LaneDetector::clear_release() {
   left_y_.clear();
   right_x_.clear();
   right_y_.clear();
+  extra_x_.clear();
+  extra_y_.clear();
+  extra2_x_.clear();
+  extra2_y_.clear();
   center_x_.clear();
   center_y_.clear();
+  center2_x_.clear();
+  center2_y_.clear();
+  center3_x_.clear();
+  center3_y_.clear();
 }
 
 void LaneDetector::get_steer_coef(float vel){
@@ -1106,6 +1972,9 @@ void LaneDetector::get_steer_coef(float vel){
     value = 1.2f;
   else
     value = vel;
+
+//  K3_ = (a2_[0] * pow(value, 2)) + (a2_[1] * pow(value, 1)) + a2_[2];
+//  K4_ = (b2_[0] * pow(value, 2)) + (b2_[1] * pow(value, 1)) + b2_[2];
 
   if (value < 0.65f){
     K1_ = K2_ =  K_;
@@ -1154,6 +2023,76 @@ void LaneDetector::controlSteer() {
   
 }
 
+tk::spline LaneDetector::cspline() {
+  float tY1_ = ((float)height_) * 0;
+  float tY2_ = ((float)height_) * 0.1;
+  float tY3_ = ((float)height_) * 0;
+  float tY4_ = ((float)height_) * 0.1;
+  float tY5_ = ((float)height_) * e1_height_;
+  
+  std::vector<double> X;
+  std::vector<double> Y; 
+  tk::spline cspline_eq;
+
+  /*****************/
+  /* lc_right_coef */
+  /*****************/
+  if (mark_ == 1 && !right_coef_.empty() && !center2_coef_.empty()) { 
+    int tX1_ = (int)((right_coef_.at<float>(2, 0) * pow(tY1_, 2)) + (right_coef_.at<float>(1, 0) * tY1_) + right_coef_.at<float>(0, 0));
+    int tX2_ = (int)((right_coef_.at<float>(2, 0) * pow(tY2_, 2)) + (right_coef_.at<float>(1, 0) * tY2_) + right_coef_.at<float>(0, 0));
+    int tX3_ = (int)((center2_coef_.at<float>(2, 0) * pow(tY3_, 2)) + (center2_coef_.at<float>(1, 0) * tY3_) + center2_coef_.at<float>(0, 0));
+    int tX4_ = (int)((center2_coef_.at<float>(2, 0) * pow(tY4_, 2)) + (center2_coef_.at<float>(1, 0) * tY4_) + center2_coef_.at<float>(0, 0));
+  
+    if (center_select_ == 1) {
+      X = {(double)tX1_, (double)tX2_, (double)(width_/2)};
+      //Y = {(double)tY1_, (double)tY2_, (double)tY5_}; //오름차순
+      Y = {(double)tY1_, (double)tY2_, (double)height_}; //오름차순
+    } 
+    else if (center_select_ == 2) {
+      X = {(double)tX3_, (double)tX4_, (double)(width_/2)};
+      //Y = {(double)tY3_, (double)tY4_, (double)tY5_}; 
+      Y = {(double)tY3_, (double)tY4_, (double)height_}; 
+    }
+    else {
+      X = {(double)tX3_, (double)tX4_, (double)(width_/2)};
+      //Y = {(double)tY3_, (double)tY4_, (double)tY5_}; 
+      Y = {(double)tY3_, (double)tY4_, (double)height_}; 
+    }
+  
+    tk::spline s(Y, X, tk::spline::cspline); 
+    cspline_eq = s;
+  }
+  /****************/
+  /* lc_left_coef */
+  /****************/
+  else if (mark_ == 2 && !left_coef_.empty() && !center3_coef_.empty()) { 
+    int tX1_ = (int)((left_coef_.at<float>(2, 0) * pow(tY1_, 2)) + (left_coef_.at<float>(1, 0) * tY1_) + left_coef_.at<float>(0, 0));
+    int tX2_ = (int)((left_coef_.at<float>(2, 0) * pow(tY2_, 2)) + (left_coef_.at<float>(1, 0) * tY2_) + left_coef_.at<float>(0, 0));
+    int tX3_ = (int)((center3_coef_.at<float>(2, 0) * pow(tY3_, 2)) + (center3_coef_.at<float>(1, 0) * tY3_) + center3_coef_.at<float>(0, 0));
+    int tX4_ = (int)((center3_coef_.at<float>(2, 0) * pow(tY4_, 2)) + (center3_coef_.at<float>(1, 0) * tY4_) + center3_coef_.at<float>(0, 0));
+  
+    if (center_select_ == 1) {
+      X = {(double)tX1_, (double)tX2_, (double)(width_/2)};
+      //Y = {(double)tY1_, (double)tY2_, (double)tY5_}; //오름차순
+      Y = {(double)tY1_, (double)tY2_, (double)height_}; //오름차순
+    } 
+    else if (center_select_ == 2) {
+      X = {(double)tX3_, (double)tX4_, (double)(width_/2)};
+      //Y = {(double)tY3_, (double)tY4_, (double)tY5_}; 
+      Y = {(double)tY3_, (double)tY4_, (double)height_}; 
+    }
+    else {
+      X = {(double)tX3_, (double)tX4_, (double)(width_/2)};
+      //Y = {(double)tY3_, (double)tY4_, (double)tY5_}; 
+      Y = {(double)tY3_, (double)tY4_, (double)height_}; 
+    }
+  
+    tk::spline s(Y, X, tk::spline::cspline); 
+    cspline_eq = s;
+  }
+
+  return cspline_eq;
+}
 
 Mat LaneDetector::drawBox(Mat frame)
 {
@@ -1167,6 +2106,13 @@ Mat LaneDetector::drawBox(Mat frame)
     y = y_;
     w = w_;
     h = h_;
+  }
+  else if(rearImageStatus_) {
+    name = r_name_;
+    x = rx_;
+    y = ry_;
+    w = rw_;
+    h = rh_;
   }
 
   if (name == "SV1") color = cv::Scalar(255, 0, 255);
@@ -1233,127 +2179,335 @@ Mat LaneDetector::estimateDistance(Mat frame, Mat trans, double cycle_time, bool
 }
 
 float LaneDetector::display_img(Mat _frame, int _delay, bool _view) {   
-  Mat test_trans, new_frame, gray_frame, binary_frame, overlap_frame, sliding_frame, resized_frame, warped_frame;
-  static struct timeval startTime, endTime;
-  static bool flag = false;
-  static bool lc_flag = false;
-  double diffTime = 0.0;
-  
-  /* apply ROI setting */
-  if(imageStatus_) {
-    std::copy(fROIcorners_.begin(), fROIcorners_.end(), corners_.begin());
-    std::copy(fROIwarpCorners_.begin(), fROIwarpCorners_.end(), warpCorners_.begin());
-    lc_right_flag_ = false; 
-    lc_left_flag_ = false; 
-    lc_center_follow_ = true;
-  }
+    Mat test_trans, new_frame, gray_frame, binary_frame, overlap_frame, sliding_frame, resized_frame, warped_frame, blended;
+    static struct timeval startTime, endTime;
+    static bool flag = false;
+    static bool lc_flag = false;
+    double diffTime = 0.0;
 
-  Mat trans = getPerspectiveTransform(corners_, warpCorners_);
+    /* apply ROI setting */
+    if(imageStatus_) {
+        if((lc_left_flag || lc_right_flag) && lc_flag == false) {
+        lc_flag = true;
+        wroi_flag_ = true;
+        }
+        else if (lc_left_flag == false && lc_right_flag == false) {
+        lc_flag = false;
+        wroi_flag_ = false;
+        }
 
-  //For Estimation ROI
-  std::copy(testROIcorners_.begin(), testROIcorners_.end(), test_corners_.begin());
-  std::copy(testROIwarpCorners_.begin(), testROIwarpCorners_.end(), test_warpCorners_.begin());
-  test_trans = getPerspectiveTransform(test_corners_, test_warpCorners_);
+        if(lc_flag && wroi_flag_) {
+            if(lc_right_flag) { // right lane change mode
+                std::copy(rROIcorners_.begin(), rROIcorners_.end(), corners_.begin());
+                std::copy(rROIwarpCorners_.begin(), rROIwarpCorners_.end(), warpCorners_.begin());
+                lc_right_flag_ = true;
+                lc_center_follow_ = false;
+            }
+            else if(lc_left_flag) { // left lane change mode
+                std::copy(lROIcorners_.begin(), lROIcorners_.end(), corners_.begin());
+                std::copy(lROIwarpCorners_.begin(), lROIwarpCorners_.end(), warpCorners_.begin());
+                lc_left_flag_ = true;
+                lc_center_follow_ = false;
+            }
+        }
+            else { // normal mode
+                std::copy(fROIcorners_.begin(), fROIcorners_.end(), corners_.begin());
+                std::copy(fROIwarpCorners_.begin(), fROIwarpCorners_.end(), warpCorners_.begin());
+                lc_right_flag_ = false; 
+                lc_left_flag_ = false; 
+                lc_center_follow_ = true;
+            }
+    }
+    else if(rearImageStatus_ == true) {
+        map1_ = r_map1_.clone();
+        map2_ = r_map2_.clone();
+        std::copy(rearROIcorners_.begin(), rearROIcorners_.end(), corners_.begin());
+        std::copy(rearROIwarpCorners_.begin(), rearROIwarpCorners_.end(), warpCorners_.begin());
+        lc_right_flag_ = false; 
+        lc_left_flag_ = false;  
+        lc_center_follow_ = true;
+    }
 
-  /* End apply ROI setting */
-  if (!_frame.empty())
-      resize(_frame, new_frame, Size(width_, height_), 0, 0, cv::INTER_LINEAR);
-  
-  cv::Mat map1, map2;
-  map1 = Mat(map1_);
-  map2 = Mat(map2_);
-  
-  cv::Mat remap_frame;
-  remap(new_frame, remap_frame, map1, map2, INTER_LINEAR);
-  
-//  cv::Mat warped_frame;
-  if (imageStatus_ && TEST) { // For view TEST ROI
-      warpPerspective(remap_frame, warped_frame, test_trans, Size(width_, height_));
-  } else {
-      warpPerspective(remap_frame, warped_frame, trans, Size(width_, height_));
-  }
-  
-  cv::Mat blur_frame; 
-  GaussianBlur(warped_frame, blur_frame, Size(5, 5), 0, 0, BORDER_DEFAULT);
-//  cv::Mat gray_frame;
-  cvtColor(blur_frame, gray_frame, COLOR_BGR2GRAY);
-  
-  for (int y = height_ / 2; y < gray_frame.rows; y++) {
-      for (int x = 0; x < gray_frame.cols; x++) {
-          if (gray_frame.at<uchar>(y, x) == 0) {
-              gray_frame.at<uchar>(y, x) = 0;
-          }
-      }
-  }
-//  cv::Mat binary_frame;
-  /* adaptive Threshold */
-  adaptiveThreshold(gray_frame, binary_frame, 255, ADAPTIVE_THRESH_MEAN_C, THRESH_BINARY, Threshold_box_size_, -(Threshold_box_offset_));
 
-  /* estimate Distance */
-  if ((((x_ > 0 && x_ < 640) && \
-          (y_ > 0 && y_ < 480) && \
-          (w_ > 0 && w_ < 640) && \
-          (h_ > 0 && h_ < 480))) || \
-      (((rx_ > 0 && rx_ < 640) && \
+    /* End apply BEV setting */
+    if(!_frame.empty()) resize(_frame, new_frame, Size(width_, height_), 0, 0, cv::INTER_LINEAR);
+    Mat trans = getPerspectiveTransform(corners_, warpCorners_); // Original image to BEV
+    Mat reverse_trans = getPerspectiveTransform(warpCorners_ , corners_); //BEV to Original Image
+    warpPerspective(_frame,warped_frame,trans,Size(width_,height_),INTER_LINEAR);
+
+    /* estimate Distance */
+    if ((((x_ > 0 && x_ < 640) && \
+        (y_ > 0 && y_ < 480) && \
+        (w_ > 0 && w_ < 640) && \
+        (h_ > 0 && h_ < 480))) || \
+        (((rx_ > 0 && rx_ < 640) && \
         (ry_ > 0 && ry_ < 480) && \
         (rw_ > 0 && rw_ < 640) && \
         (rh_ > 0 && rh_ < 480)))) 
-  {
-    gettimeofday(&endTime, NULL);
-    if (!flag){
-      diffTime = (endTime.tv_sec - start_.tv_sec) + (endTime.tv_usec - start_.tv_usec)/1000000.0;
-      flag = true;
-    }
-    else{
-      diffTime = (endTime.tv_sec - startTime.tv_sec) + (endTime.tv_usec - startTime.tv_usec)/1000000.0;
-      startTime = endTime;
-    }
-    if (imageStatus_) sliding_frame = estimateDistance(sliding_frame, test_trans, diffTime, _view);
+    {
+        gettimeofday(&endTime, NULL);
+        if (!flag){
+            diffTime = (endTime.tv_sec - start_.tv_sec) + (endTime.tv_usec - start_.tv_usec)/1000000.0;
+            flag = true;
+        }
+        else{
+           diffTime = (endTime.tv_sec - startTime.tv_sec) + (endTime.tv_usec - startTime.tv_usec)/1000000.0;
+            startTime = endTime;
+        }
 
-    if(imageStatus_ && est_dist_ != 0) {
-      //distance_ = (int)((2.50f - est_dist_)*frontRoi_ratio); // FOR ICRA
+        if(imageStatus_ && est_dist_ != 0) {
+          //distance_ = (int)((2.50f - est_dist_)*frontRoi_ratio); // FOR ICRA
+        }
+        else if(rearImageStatus_ && est_dist_ != 0) {
+            distance_ = (int)((2.50f - est_dist_)*rearRoi_ratio); // FOR ICRA
+        }
     }
-  }
-  else {
+    else {
 //    est_dist_ = 0.0f; // box튀면 값이 0됨 (LPF로 처리도 안됨) 
 //    est_vel_ = 0.0f;
-  }
-
-  sliding_frame = detect_lines_sliding_window(binary_frame, _view);
-  controlSteer();
-
-  if (_view) {
-    resized_frame = draw_lane(sliding_frame, new_frame);
-    namedWindow("Window1");
-    moveWindow("Window1", 0, 0);
-    namedWindow("Window2");
-    moveWindow("Window2", 710, 0);
-    namedWindow("Window3");
-    moveWindow("Window3", 1340, 0);
-    namedWindow("Histogram Clusters");
-    moveWindow("Histogram Clusters", 710, 700);
-
-    if(!new_frame.empty()) {
-      if(TEST) cv::circle(new_frame, center_, 10, (0,0,255), -1);
-      new_frame = drawBox(new_frame);
-      imshow("Window1", new_frame);
+    
+    if(rearImageStatus_) {
+        distance_ = 10.0f; 
+        }
     }
-    if(!sliding_frame.empty()) {
-      if(TEST) cv::circle(sliding_frame, warp_center_, 10, (0,0,255), -1);
-      imshow("Window2", sliding_frame);
-    }
-    if(!resized_frame.empty()){
-      imshow("Window3", resized_frame);
-    }
-
-    waitKey(_delay);
-  }
-  clear_release();
+      /* Ultra Fast Lane detection */
+      //preprocessing
+    static float data[BATCH_SIZE * INPUT_C * INPUT_H * INPUT_W];
+    static float prob[BATCH_SIZE * OUTPUT_SIZE];
 
 
+    std::vector<float> result(INPUT_C * INPUT_W * INPUT_H);
+    
+    cv::Mat resized;
+    cv::resize(_frame, resized, cv::Size(INPUT_W, INPUT_H));
+    Mat orig_img = _frame.clone();
+    cv::Mat img_float;
+
+    resized.convertTo(img_float, CV_32FC3, 1. / 255.);
+
+    // HWC TO CHW
+    std::vector<cv::Mat> input_channels(INPUT_C);
+    cv::split(img_float, input_channels);
+
+    // normalize
   
+    auto data_ = result.data();
+    int channelLength = INPUT_H * INPUT_W;
+    static float mean[]= {0.485, 0.456, 0.406};
+    static float std[] = {0.229, 0.224, 0.225};
+    for (int i = 0; i < INPUT_C; ++i) {
+        cv::Mat normed_channel = (input_channels[i] - mean[i]) / std[i];
+        memcpy(data_, normed_channel.data, channelLength * sizeof(float));
+        data_ += channelLength;
+    }
+    memcpy(data, &result[0], INPUT_C * INPUT_W * INPUT_H * sizeof(float));
+    //inference
+    doInference(*context, data, prob, BATCH_SIZE); //prob: size (101, 56, 4)
+    //post processing
+    float max_ind[BATCH_SIZE * OUTPUT_H * OUTPUT_W];
+    float prob_reverse[BATCH_SIZE * OUTPUT_SIZE];
+    /* do out_j = out_j[:, ::-1, :] in python list*/
+    float expect[BATCH_SIZE * OUTPUT_H * OUTPUT_W];
+    for (int k = 0, wh = OUTPUT_W * OUTPUT_H; k < OUTPUT_C; k++) {
+        for(int j = 0; j < OUTPUT_H; j ++) {
+            for(int l = 0; l < OUTPUT_W; l++) {
+            prob_reverse[k * wh + (OUTPUT_H - 1 - j) * OUTPUT_W + l] =
+            prob[k * wh + j * OUTPUT_W + l];
+            }
+        }
+    }
 
-  return SteerAngle_;
+    argmax(prob_reverse, max_ind, OUTPUT_H, OUTPUT_W, OUTPUT_C);
+    /* calculate softmax and Expect */
+    softmax_mul(prob_reverse, expect, OUTPUT_H, OUTPUT_W, OUTPUT_C);
+    for(int k = 0; k < OUTPUT_H; k++) {
+        for(int j = 0; j < OUTPUT_W; j++) {
+            max_ind[k * OUTPUT_W + j] == 100 ? expect[k * OUTPUT_W + j] = 0 :
+            expect[k * OUTPUT_W + j] = expect[k * OUTPUT_W + j];
+        }
+    }
+    std::vector<int> i_ind;
+    for(int k = 0; k < OUTPUT_W; k++) {
+        int ii = 0;
+        for(int g = 0; g < OUTPUT_H; g++) {
+            if(expect[g * OUTPUT_W + k] != 0)
+                ii++;
+            }
+            if(ii > 2) {
+                i_ind.push_back(k);
+            }
+    }
+
+
+    vector<Point2f> left_point_f; //Oringinal left lane points for transform to BEV
+    vector<Point2f> right_point_f; // Oringinal right lane points for transform to BEV
+    vector<Point2f> warp_left_point_f; // Transformed BEV left lane points
+    vector<Point2f> warp_right_point_f; // Transformes BEV right lane points;       
+          
+    for(int k = 0; k < OUTPUT_H-1; k++) {
+        for(int ll = 0; ll < i_ind.size(); ll++) {
+            if(expect[OUTPUT_W * k + i_ind[ll]] > 0 ) {
+                if ( int( vis_h * tusimple_row_anchor[OUTPUT_H - 1 - k] / INPUT_H) - 1 > 460) {
+                        break;
+                }
+                Point temp_point;  
+                if ( ll == 1 && expect[OUTPUT_W * k + i_ind[ll]] != 1) {  // left
+                    temp_point.x = int(expect[OUTPUT_W * k + i_ind[ll]] * col_sample_w * vis_w / INPUT_W) - 1;
+                    temp_point.y = int( vis_h * tusimple_row_anchor[OUTPUT_H - 1 - k] / INPUT_H) - 1;
+                    left_point_f.push_back(temp_point);
+                }
+                else if ( ll == 2 && expect[OUTPUT_W * k + i_ind[ll]] != 1) { // right
+                    temp_point.x = int(expect[OUTPUT_W * k + i_ind[ll]] * col_sample_w * vis_w / INPUT_W) - 1;
+                    temp_point.y = int( vis_h * tusimple_row_anchor[OUTPUT_H - 1 - k] / INPUT_H) - 1;
+                    right_point_f.push_back(temp_point);   
+                }
+            }
+        }
+    }
+
+    if (left_point_f.size() != 0 && right_point_f.size() != 0 ) { // If all lane points are detected
+        perspectiveTransform(left_point_f , warp_left_point_f, trans); // Transform left lane points to BEV left lane points
+        perspectiveTransform(right_point_f , warp_right_point_f, trans); // Transform right lane points to BEV right lane points
+        vector<int> left_point_f_y; // Y BEV left lane points to get polyfit
+        vector<int> left_point_f_x; // X BEV left lane points to get polyfit
+        vector<int> right_point_f_y; // Y BEV right lane points to get polyfit
+        vector<int> right_point_f_x; // X BEV right lane points to get polyfit
+
+        for (int i =0 ; i < warp_left_point_f.size(); i++) {
+              if (warp_left_point_f[i].y < distance_ && option_) break; // Dynamic ROI
+              Point pp =
+                        { warp_left_point_f[i].x,
+                          warp_left_point_f[i].y };
+              cv::circle(warped_frame, pp, 4, CV_RGB(0, 255 ,0), -1);
+              left_point_f_y.push_back(warp_left_point_f[i].y);
+              left_point_f_x.push_back(warp_left_point_f[i].x);         
+        }
+
+        for (int i =0 ; i < warp_right_point_f.size() ; i++) {
+            if (warp_right_point_f[i].y < distance_ && option_) break; // Dynamic ROI
+            Point pp =
+                        { warp_right_point_f[i].x,
+                          warp_right_point_f[i].y };
+            cv::circle(warped_frame, pp, 4, CV_RGB(0, 255 ,0), -1);
+            right_point_f_y.push_back(warp_right_point_f[i].y);
+            right_point_f_x.push_back(warp_right_point_f[i].x);
+        }
+        // To get center polyfit
+        left_coef_ = polyfit(left_point_f_y, left_point_f_x);
+        right_coef_ = polyfit(right_point_f_y, right_point_f_x);
+        center_coef_ = (left_coef_ + right_coef_)/2;
+
+
+
+        controlSteer();
+
+        vector<Point2f> warp_left_point2f;
+        vector<Point2f> warp_right_point2f;
+        vector<Point2f> reverse_left_point2f;
+        vector<Point2f> reverse_right_point2f;
+
+
+
+       //To draw lane in BEV
+        vector<Point> left_point;
+        vector<Point> right_point;
+        vector<Point> center_point;
+        if ((!left_coef_.empty()) && (!right_coef_.empty())) {
+            for (int i = option_ ? distance_: 0; i <= 480; i++) {
+                Point temp_left_point;
+                Point temp_right_point;
+                Point temp_center_point;
+
+                temp_left_point.x = (int)((left_coef_.at<float>(2, 0) * pow(i, 2)) + (left_coef_.at<float>(1, 0) * i) + left_coef_.at<float>(0, 0));
+                temp_left_point.y = (int)i;
+                temp_right_point.x = (int)((right_coef_.at<float>(2, 0) * pow(i, 2)) + (right_coef_.at<float>(1, 0) * i) + right_coef_.at<float>(0, 0));
+                temp_right_point.y = (int)i;
+                temp_center_point.x = (int)((center_coef_.at<float>(2, 0) * pow(i, 2)) + (center_coef_.at<float>(1, 0) * i) + center_coef_.at<float>(0, 0));
+                temp_center_point.y = (int)i;
+
+                left_point.push_back(temp_left_point);
+                right_point.push_back(temp_right_point);
+                center_point.push_back(temp_center_point);
+
+                warp_left_point2f.push_back(temp_left_point);
+                warp_right_point2f.push_back(temp_right_point);
+            }
+
+
+            const Point* left_points_point_ = (const cv::Point*) Mat(left_point).data;
+            int left_points_number_ = Mat(left_point).rows;
+            const Point* right_points_point_ = (const cv::Point*) Mat(right_point).data;
+            int right_points_number_ = Mat(right_point).rows;
+            const Point* center_points_point_ = (const cv::Point*) Mat(center_point).data;
+            int center_points_number_ = Mat(center_point).rows;
+
+
+            polylines(warped_frame, &left_points_point_, &left_points_number_, 1, false, Scalar(255, 100, 100), 10);
+            polylines(warped_frame, &right_points_point_, &right_points_number_, 1, false, Scalar(255, 100, 100), 10);
+            polylines(warped_frame, &center_points_point_, &center_points_number_, 1, false, Scalar(200, 255, 200), 10);
+
+
+            //To draw lane in Original image
+            perspectiveTransform(warp_left_point2f , reverse_left_point2f, reverse_trans);
+            perspectiveTransform(warp_right_point2f , reverse_right_point2f, reverse_trans);
+
+            
+            std::vector<Point> leftInt, rightInt;
+            for(const auto& p:reverse_left_point2f) leftInt.push_back(Point(static_cast<int>(p.x), static_cast<int>(p.y)));
+            for(const auto& p:reverse_right_point2f) rightInt.push_back(Point(static_cast<int>(p.x), static_cast<int>(p.y)));
+
+            const Point* leftInt_points = (const cv::Point*) Mat(leftInt).data;
+            int leftInt_points_number_ = Mat(leftInt).rows;
+            const Point* rightInt_points = (const cv::Point*) Mat(rightInt).data;
+            int rightInt_points_number_ = Mat(rightInt).rows;
+
+
+            polylines(_frame, &leftInt_points, &leftInt_points_number_, 1, false, Scalar(255, 100, 100), 10);
+            polylines(_frame, &rightInt_points, &rightInt_points_number_, 1, false, Scalar(255, 100, 100), 10);          
+           
+
+            //fillPoly, Drivable Area
+            std::reverse(rightInt.begin(), rightInt.end());
+            leftInt.insert(leftInt.end(), rightInt.begin(), rightInt.end());
+            std::vector<std::vector<cv::Point>> pts;
+            pts.push_back(leftInt);
+
+            fillPoly(orig_img, pts, cv::Scalar(255,191,0));
+
+            addWeighted( orig_img, 0.3, _frame, 0.7,0.0,blended);
+            //end fillpoly
+
+   
+        }
+        if (_view) {
+            // resized_frame = draw_lane(sliding_frame, new_frame);
+     //       namedWindow("Window1");
+       //     moveWindow("Window1", 0, 0);
+            namedWindow("Window2");
+            moveWindow("Window2", 710, 0);
+            namedWindow("Window3");
+            moveWindow("Window3", 1340, 0);
+
+            if(!new_frame.empty()) {
+                if(TEST) cv::circle(new_frame, center_, 10, (0,0,255), -1);
+                //new_frame = drawBox(new_frame);
+         //       imshow("Window1", new_frame);
+            }
+            if(!warped_frame.empty()) {
+                if(TEST) cv::circle(sliding_frame, warp_center_, 10, (0,0,255), -1);
+                // imshow("Window2", sliding_frame);
+                imshow("Window2", warped_frame);
+            }
+            if(!_frame.empty()){
+                imshow("Window3", blended);
+            }
+
+        waitKey(_delay);
+      }
+        clear_release();
+        return SteerAngle_;
+    }
 }
+
 
 } /* namespace lane_detect */
