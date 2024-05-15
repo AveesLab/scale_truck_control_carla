@@ -26,6 +26,7 @@ set(msg_files
   "msg/Xav2cmd.msg"
   "msg/Boundingbox.msg"
   "msg/Yoloflag.msg"
+  "msg/Target.msg"
 )
 
 rosidl_generate_interfaces(${PROJECT_NAME}
