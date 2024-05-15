@@ -30,8 +30,8 @@ public:
     std_msgs::msg::Float32 control_msg_;
     float Kp_dist_ = 0.8; // 2.0; //0.8;
     float Kd_dist_ = 0.03; //0.05;
-    float Kp_throttle_ = 0.3; // 2.0; //0.8;
-    float Ki_throttle_ = 1.5; // 0.4; //10.0;
+    float Kp_throttle_ = 0.8; // 2.0; //0.8;
+    float Ki_throttle_ = 10.0; // 0.4; //10.0;
     float Ka_throttle_ = 0.01;
     float Kf_throttle_ = 1.0;  // feed forward const.
     float Kp_brake_;
