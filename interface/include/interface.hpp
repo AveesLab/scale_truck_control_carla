@@ -20,7 +20,8 @@
 #include "rclcpp/rclcpp.hpp"
 #include "ros2_msg/msg/cmd2xav.hpp"
 #include "ros2_msg/msg/target.hpp"
-
+#include "std_msgs/msg/bool.hpp"
+#include "std_msgs/msg/float32.hpp"
 
 
 namespace interface {
@@ -38,6 +39,12 @@ private:
   //Subscriber
   rclcpp::Subscription<ros2_msg::msg::Cmd2xav>::SharedPtr CmdSubscriber_;
   void CmdSubCallback(const ros2_msg::msg::Cmd2xav::SharedPtr msg);
+  void ScenarioVelocitySubCallback(const std_msgs::msg::Float32::SharedPtr msg);
+  void ScenarioBrakeSubCallback(const std_msgs::msg::Bool::SharedPtr msg);
+  void ScenarioTimegapSubCallback(const std_msgs::msg::Float32::SharedPtr msg);
+  rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr ScenarioVelocitySubscriber_; 
+  rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr ScenarioBrakeSubscriber_;
+  rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr ScenarioTimegapSubscriber_; 
   //Publisher
   rclcpp::Publisher<ros2_msg::msg::Target>::SharedPtr TargetPublisher_;
 };

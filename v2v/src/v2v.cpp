@@ -37,6 +37,8 @@ void V2V::velocity_callback(const std_msgs::msg::Float32::SharedPtr msg) {
     this->current_velocity = msg->data;
 }
 
+
+
 void V2V::timerCallback() {
     ros2_msg::msg::Target tar;
     tar.emergency_flag = this->emergency_flag;
