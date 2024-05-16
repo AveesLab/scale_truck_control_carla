@@ -25,7 +25,7 @@ LaneDetector::LaneDetector()
   /****************************/
   /* Ros Topic Publish Option */
   /****************************/
-  this->get_parameter_or("publishers/lane_to_xavier/topic", XavPubTopicName, std::string("lane2xav_msg"));
+  this->get_parameter_or("publishers/lane_to_xavier/topic", XavPubTopicName, std::string("laneinfo"));
   this->get_parameter_or("publishers/lane_to_xavier/queue_size", XavPubQueueSize, 1);
   
   /************************/
@@ -1018,3 +1018,5 @@ float LaneDetector::display_img(Mat _frame, int _delay, bool _view) {
 }
 
 } /* namespace lane_detect */
+
+

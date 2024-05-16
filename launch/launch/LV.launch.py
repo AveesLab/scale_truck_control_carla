@@ -53,13 +53,13 @@ def generate_launch_description():
     speed_control_node=Node(
             package='speed_control', 
             namespace='truck0', 
-            name='speed_control_node', 
+            name='VelocityControl', 
             executable='speed_control_node', 
             output='screen')
     v2v_node=Node(
             package='v2v', 
             namespace='truck0', 
-            name='v2v', 
+            name='V2Vnetwork', 
             executable='v2v_node', 
             output='screen',
             parameters=[{'truck_name': LaunchConfiguration('truck_name')}])
@@ -67,14 +67,14 @@ def generate_launch_description():
     plan_node=Node(
             package='planner', 
             namespace='truck0', 
-            name='planner', 
+            name='Planning', 
             executable='planner_node', 
             output='screen',
             parameters=[{'truck_name': LaunchConfiguration('truck_name')}])
     interface_node=Node(
             package='interface', 
             namespace='truck0', 
-            name='interface', 
+            name='Interface', 
             executable='interface_node', 
             output='screen')
 

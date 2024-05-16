@@ -20,29 +20,29 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#include "pcl_object_detection.hpp"
+#include "pcl_obstacle_detection.hpp"
 
-namespace pcl_object_detection
+namespace pcl_obstacle_detection
 {
 
-static const rclcpp::Logger LOGGER = rclcpp::get_logger("pcl_object_detection");
+static const rclcpp::Logger LOGGER = rclcpp::get_logger("pcl_obstacle_detection");
 
-PclObjectDetection::PclObjectDetection(
+PclObstacleDetection::PclObstacleDetection(
   const rclcpp::NodeOptions& options
-): PclObjectDetection("", options)
+): PclObstacleDetection("", options)
 {}
 
-PclObjectDetection::PclObjectDetection(
+PclObstacleDetection::PclObstacleDetection(
   const std::string& name_space,
   const rclcpp::NodeOptions& options
-): Node("PclObjectDetection", name_space, options)
+): Node("ObstacleDetection", name_space, options)
 {
-  RCLCPP_INFO(this->get_logger(),"PclObjectDetection init complete!");
+  RCLCPP_INFO(this->get_logger(),"PclObstacleDetection init complete!");
 
   // Store clock
   clock_ = this->get_clock();
 
-  // use_debug: enable/disable output of a cloud containing object points
+  // use_debug: enable/disable output of a cloud containing obstacle points
   debug_ = this->declare_parameter<bool>("debug_topics", false);
 
   // frame_id: frame to transform cloud to (should be XY horizontal)
@@ -51,7 +51,7 @@ PclObjectDetection::PclObjectDetection(
   // Create a ROS subscriber for the input point cloud
   //rclcpp::QoS subscription_qos(1);
   auto sensor_qos = rclcpp::QoS(rclcpp::SensorDataQoS());
-  std::function<void(const sensor_msgs::msg::PointCloud2::SharedPtr)> subscription_callback = std::bind(&PclObjectDetection::cloud_callback,
+  std::function<void(const sensor_msgs::msg::PointCloud2::SharedPtr)> subscription_callback = std::bind(&PclObstacleDetection::cloud_callback,
       this, std::placeholders::_1);
   subscription_ = this->create_subscription<sensor_msgs::msg::PointCloud2>(
         "front_lidar",
@@ -76,7 +76,7 @@ PclObjectDetection::PclObjectDetection(
   mindist=this->create_publisher<ros2_msg::msg::Obj2xav>("min_distance", 10);
 }
 
-void PclObjectDetection::kft(const std_msgs::msg::Float32MultiArray ccs)
+void PclObstacleDetection::kft(const std_msgs::msg::Float32MultiArray ccs)
 {
     // First predict, to update the internal statePre variable
     std::vector<cv::Mat> pred{KF0.predict()};
@@ -169,12 +169,12 @@ void PclObjectDetection::kft(const std_msgs::msg::Float32MultiArray ccs)
         cv::Mat estimated0 = KF0.correct(meas0Mat);
 }
 
-double PclObjectDetection::euclidean_distance(geometry_msgs::msg::Point &p1, geometry_msgs::msg::Point &p2)
+double PclObstacleDetection::euclidean_distance(geometry_msgs::msg::Point &p1, geometry_msgs::msg::Point &p2)
 {
     return sqrt((p1.x - p2.x) * (p1.x - p2.x) + (p1.y - p2.y) * (p1.y - p2.y) + (p1.z - p2.z) * (p1.z - p2.z));
 }
 
-std::pair<int, int> PclObjectDetection::find_index_of_min(std::vector<std::vector<float>> dist_mat)
+std::pair<int, int> PclObstacleDetection::find_index_of_min(std::vector<std::vector<float>> dist_mat)
 {
     std::pair<int, int> min_index;
     float min_el = std::numeric_limits<float>::max();
@@ -190,7 +190,7 @@ std::pair<int, int> PclObjectDetection::find_index_of_min(std::vector<std::vecto
     return min_index;
 }
 
-void PclObjectDetection::publish_bbox_marker(std::vector<geometry_msgs::msg::Point> kf_predictions)
+void PclObstacleDetection::publish_bbox_marker(std::vector<geometry_msgs::msg::Point> kf_predictions)
 {
     
     visualization_msgs::msg::MarkerArray cluster_markers;
@@ -224,7 +224,7 @@ void PclObjectDetection::publish_bbox_marker(std::vector<geometry_msgs::msg::Poi
 
 }
 
-void PclObjectDetection::publish_object_ids(std::vector<int> obj_ids)
+void PclObstacleDetection::publish_object_ids(std::vector<int> obj_ids)
 {
     std_msgs::msg::Int32MultiArray obj_ids_msg;
     for (auto it = obj_ids.begin(); it != obj_ids.end(); it++)
@@ -234,7 +234,7 @@ void PclObjectDetection::publish_object_ids(std::vector<int> obj_ids)
     object_ids_pub_->publish(obj_ids_msg);
 }
 
-void PclObjectDetection::publish_cloud(rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr &pub, pcl::PointCloud<pcl::PointXYZ>::Ptr cluster)
+void PclObstacleDetection::publish_cloud(rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr &pub, pcl::PointCloud<pcl::PointXYZ>::Ptr cluster)
 {
     auto cluster_msg = std::make_shared<sensor_msgs::msg::PointCloud2>();
     pcl::toROSMsg(*cluster, *cluster_msg);
@@ -244,7 +244,7 @@ void PclObjectDetection::publish_cloud(rclcpp::Publisher<sensor_msgs::msg::Point
     pub->publish(*cluster_msg);
 }
 
-void PclObjectDetection::initialize_kalman_filter()
+void PclObstacleDetection::initialize_kalman_filter()
 {
     // Initialize 6 Kalman Filters; Assuming 6 max objects in the dataset.
     // Could be made generic by creating a Kalman Filter only when a new object
@@ -298,7 +298,7 @@ void PclObjectDetection::initialize_kalman_filter()
     
 }
 
-void PclObjectDetection::cloud_callback(const sensor_msgs::msg::PointCloud2::ConstPtr &scan)
+void PclObstacleDetection::cloud_callback(const sensor_msgs::msg::PointCloud2::ConstPtr &scan)
 {
   //    auto input = std::make_unique<sensor_msgs::msg::PointCloud2>();
 //projector_.projectLaser(*scan, *input);
@@ -606,4 +606,4 @@ void PclObjectDetection::cloud_callback(const sensor_msgs::msg::PointCloud2::Con
   }
 }
 
-}  // namespace pcl_object_detection
+}  // namespace pcl_obstacle_detection

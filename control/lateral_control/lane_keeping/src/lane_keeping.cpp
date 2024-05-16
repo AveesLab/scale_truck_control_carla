@@ -22,7 +22,7 @@ LaneKeeping::LaneKeeping()
   /******************************/
   this->get_parameter_or("subscribers/xavier_to_lane/topic", XavSubTopicName, std::string("xav2lane_msg"));
   this->get_parameter_or("subscribers/xavier_to_lane/queue_size", XavSubQueueSize, 1);
-  this->get_parameter_or("subscribers/lane_to_xavier/topic", LaneTopicName, std::string("lane2xav_msg"));
+  this->get_parameter_or("subscribers/lane_to_xavier/topic", LaneTopicName, std::string("laneinfo"));
   this->get_parameter_or("subscribers/lane_to_xavier/queue_size", LaneQueueSize, 1);
   
   /************************/

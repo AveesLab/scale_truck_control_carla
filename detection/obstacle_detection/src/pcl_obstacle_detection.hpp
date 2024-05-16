@@ -58,7 +58,7 @@
 
 
 
-namespace pcl_object_detection
+namespace pcl_obstacle_detection
 {
 
 // KF init
@@ -74,12 +74,12 @@ cv::KalmanFilter KF5(state_dim_, meas_dim_, ctrl_dim_, CV_32F);
 
 typedef pcl::PointCloud<pcl::PointXYZ> PointCloud;
 
-class PclObjectDetection : public rclcpp::Node{
+class PclObstacleDetection : public rclcpp::Node{
 public:
-    PclObjectDetection(
+    PclObstacleDetection(
         const rclcpp::NodeOptions& options=rclcpp::NodeOptions()
     );
-    PclObjectDetection(
+    PclObstacleDetection(
         const std::string& name_space,
         const rclcpp::NodeOptions& options=rclcpp::NodeOptions()
     );

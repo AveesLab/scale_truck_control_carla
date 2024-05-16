@@ -7,7 +7,7 @@
     subscribers/xavier_to_lane/topic: xav2lane_msg
     subscribers/xavier_to_lane/queue_size: 1
 
-    publishers/lane_to_xavier/topic: lane2xav_msg
+    publishers/lane_to_xavier/topic: laneinfo
     publishers/lane_to_xavier/queue_size: 1
 
     image_view/enable_opencv: false

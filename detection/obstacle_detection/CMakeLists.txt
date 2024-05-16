@@ -34,7 +34,7 @@ find_package(ros2_msg REQUIRED)
 include_directories(include ${cv_bridge_INCLUDE_DIRS})
 
 add_library(object_detection_ros2 SHARED
-  src/pcl_object_detection.cpp)
+  src/pcl_obstacle_detection.cpp)
 target_compile_definitions(object_detection_ros2
   PRIVATE "COMPOSITION_BUILDING_DLL")
 
@@ -54,11 +54,11 @@ ament_target_dependencies(object_detection_ros2
   ros2_msg
 )
 
-rclcpp_components_register_nodes(object_detection_ros2 "object_detection_ros2::PclObjectDetection")
-set(node_plugins "${node_plugins}object_detection_ros2::PclObjectDetection;$<TARGET_FILE:object_detection_ros2>\n")
+rclcpp_components_register_nodes(object_detection_ros2 "object_detection_ros2::PclObstacleDetection")
+set(node_plugins "${node_plugins}object_detection_ros2::PclObstacleDetection;$<TARGET_FILE:object_detection_ros2>\n")
 
 add_executable(obstacle_detection_node
-    src/pcl_object_detection_node.cpp)
+    src/main.cpp)
 target_link_libraries(obstacle_detection_node
     object_detection_ros2
     laser_geometry::laser_geometry

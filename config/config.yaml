@@ -1,6 +1,6 @@
 /**/scale_truck_control_node:
   ros__parameters:    
-    subscribers/lane_to_xavier/topic: lane2xav_msg
+    subscribers/lane_to_xavier/topic: laneinfo
     subscribers/lane_to_xavier/queue_size: 1
     subscribers/rearlane_to_xavier/topic: rear2xav_msg
     subscribers/rearlane_to_xavier/queue_size: 1
@@ -19,7 +19,7 @@
     publishers/xavier_to_lane/queue_size: 1
     publishers/xavier_to_lrc/topic: xav2lrc_msg
     publishers/xavier_to_lrc/queue_size: 1
-    publishers/xavier_to_cmd/topic: xav2cmd_msg
+    publishers/xavier_to_cmd/topic: DrivingInfo 
     publishers/xavier_to_cmd/queue_size: 10
     publishers/xavier_to_Yolo/topic: run_yolo_flag
     publishers/xavier_to_Yolo/queue_size: 1
