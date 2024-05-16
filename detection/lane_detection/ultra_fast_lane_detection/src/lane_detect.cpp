@@ -365,10 +365,10 @@ void LaneDetector::ImageSubCallback(const sensor_msgs::msg::Image::SharedPtr msg
   }
 }
 void LaneDetector::DistanceSubCallback(const ros2_msg::msg::Obj2xav::SharedPtr msg) {
-  int droi_distance = (int)((10.0f - msg->min_dist)*45.33f);
-  dist_mutex_.lock();
-  distance_ = droi_distance;
-  dist_mutex_.unlock();
+ // int droi_distance = (int)((10.0f - msg->min_dist)*45.33f);
+ // dist_mutex_.lock();
+ // distance_ = droi_distance;
+ // dist_mutex_.unlock();
 }
 
 

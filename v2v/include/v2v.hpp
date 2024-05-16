@@ -21,7 +21,7 @@
 #include "ros2_msg/msg/cmd2xav.hpp"
 #include "ros2_msg/msg/target.hpp"
 #include "std_msgs/msg/float32.hpp"
-
+#include "std_msgs/msg/bool.hpp"
 
 using namespace std::chrono_literals;
 namespace v2v {
@@ -41,10 +41,12 @@ private:
   rclcpp::Subscription<ros2_msg::msg::Target>::SharedPtr TargetSubscriber_;
   rclcpp::Subscription<ros2_msg::msg::Target>::SharedPtr V2VSubscriber_;
   rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr VelocitySubscriber;
+  rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr EmergencySubscriber;
   void TargetSubCallback(const ros2_msg::msg::Target::SharedPtr msg);
   void V2VSubCallback(const ros2_msg::msg::Target::SharedPtr msg);
   void timerCallback();
   void velocity_callback(const std_msgs::msg::Float32::SharedPtr msg);
+  void emergencyCallback(const std_msgs::msg::Bool::SharedPtr msg);
   //Publisher
   rclcpp::Publisher<ros2_msg::msg::Target>::SharedPtr TargetPublisher_;
   rclcpp::Publisher<ros2_msg::msg::Target>::SharedPtr V2VPublisher_;

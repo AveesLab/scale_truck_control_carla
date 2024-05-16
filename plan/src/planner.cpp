@@ -34,7 +34,7 @@ void Planner::DistanceSubCallback(const ros2_msg::msg::Obj2xav::SharedPtr msg) {
 }
 
 bool Planner::check_collision() {
-    if(current_distance > 0.0f && current_distance <= 3.0f) return true;
+    if(current_distance > 0.0f && current_distance <= 13.0f) return true;
     else return false;
 }
 
@@ -82,7 +82,6 @@ void Planner::timerCallback() {
         send_full_brake();
         return;
     }
-    
     if(lv && check_collision()) {
         std_msgs::msg::Bool msg;
         msg.data = true;

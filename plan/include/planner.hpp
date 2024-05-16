@@ -42,7 +42,7 @@ private:
     float Kd_dist_ = 0.03; //0.05;
     float target_velocity = 0.0f;
     float target_distance = 14.0f;
-    float current_distance = 14.0f;
+    float current_distance = 0.0f;
     float dt_ = 0.01f;
     float des_spacing = 0.0f;
     float spacing_err = 0.0f;

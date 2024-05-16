@@ -25,7 +25,9 @@ V2V::V2V()
     V2VPublisher_ =  this->create_publisher<ros2_msg::msg::Target>("/v2v/" + to_, 10);
     V2VSubscriber_ = this->create_subscription<ros2_msg::msg::Target>("/v2v/" + truck_name,10,std::bind(&V2V::V2VSubCallback,this,std::placeholders::_1));
     VelocitySubscriber = this->create_subscription<std_msgs::msg::Float32>("velocity",1,std::bind(&V2V::velocity_callback, this, std::placeholders::_1));
+    EmergencySubscriber = this->create_subscription<std_msgs::msg::Bool>("emergency_brake",10,std::bind(&V2V::emergencyCallback,this,std::placeholders::_1));
     if(truck_name != "truck0" ) TargetPublisher_ = this->create_publisher<ros2_msg::msg::Target>("target" , 10);
+    
 }
 
 void V2V::TargetSubCallback(const ros2_msg::msg::Target::SharedPtr msg) {
@@ -37,7 +39,9 @@ void V2V::velocity_callback(const std_msgs::msg::Float32::SharedPtr msg) {
     this->current_velocity = msg->data;
 }
 
-
+void V2V::emergencyCallback(const std_msgs::msg::Bool::SharedPtr msg) {
+    this->emergency_flag = msg->data;
+}
 
 void V2V::timerCallback() {
     ros2_msg::msg::Target tar;

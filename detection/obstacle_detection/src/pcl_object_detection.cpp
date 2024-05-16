@@ -477,8 +477,12 @@ void PclObjectDetection::cloud_callback(const sensor_msgs::msg::PointCloud2::Con
         /* Cluster centroids */
         std::vector<pcl::PointXYZ> cluster_centroids;
 
-//        RCLCPP_INFO(this->get_logger(), "cluster_indices = %d %d %d", cluster_indices.end() - cluster_indices.begin(), cluster_indices.begin(), cluster_indices.end());
-
+    //   RCLCPP_INFO(this->get_logger(), "cluster_indices = %d %d %d", cluster_indices.end() - cluster_indices.begin(), cluster_indices.begin(), cluster_indices.end());
+     //   if (cluster_indices.size() == 0 ) {
+      //      ros2_msg::msg::Obj2xav dist;
+      //      dist.min_dist = 0.0f;   
+     //       mindist->publish(dist);// Publish cluster min_distance.
+      //  }
         for (it = cluster_indices.begin(); it != cluster_indices.end(); ++it) {
             float x = 0.0;
             float y = 0.0;
