@@ -91,11 +91,11 @@ private:
   //Subscriber
   rclcpp::Subscription<ros2_msg::msg::Xav2lane>::SharedPtr XavSubscriber_;
   rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr ImageSubscriber_;
-  rclcpp::Subscription<ros2_msg::msg::Obj2xav>::SharedPtr DistanceSubscriber_;
+  rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr DistanceSubscriber_;
   //Callback Func
   void XavSubCallback(const ros2_msg::msg::Xav2lane::SharedPtr msg);
   void ImageSubCallback(const sensor_msgs::msg::Image::SharedPtr msg);
-  void DistanceSubCallback(const ros2_msg::msg::Obj2xav::SharedPtr msg);
+  void DistanceSubCallback(const std_msgs::msg::Float32::SharedPtr msg);
   bool viewImage_;
   int waitKeyDelay_;
   bool droi_ready_ = false;

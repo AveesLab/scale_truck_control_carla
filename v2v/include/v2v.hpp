@@ -45,10 +45,10 @@ private:
   //Subscriber
   rclcpp::Subscription<ros2_msg::msg::Target>::SharedPtr TargetSubscriber_;
   rclcpp::Subscription<ros2_msg::msg::Target>::SharedPtr V2VSubscriber_;
-  rclcpp::Subscription<ros2_msg::msg::Obj2xav>::SharedPtr DistanceSubscriber_;
+  rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr DistanceSubscriber_;
   rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr VelocitySubscriber;
 
-  void DistanceSubCallback(const ros2_msg::msg::Obj2xav::SharedPtr msg);
+  void DistanceSubCallback(const std_msgs::msg::Float32::SharedPtr msg);
   void TargetSubCallback(const ros2_msg::msg::Target::SharedPtr msg);
   void V2VSubCallback(const ros2_msg::msg::Target::SharedPtr msg);
   void velocity_callback(const std_msgs::msg::Float32::SharedPtr msg);

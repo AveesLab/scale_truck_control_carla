@@ -107,7 +107,8 @@ private:
 
     rclcpp::Publisher<std_msgs::msg::String>::SharedPtr publisher_;
     rclcpp::Publisher<std_msgs::msg::Float32MultiArray>::SharedPtr cc_pos;
-    rclcpp::Publisher<ros2_msg::msg::Obj2xav>::SharedPtr mindist;
+    //rclcpp::Publisher<ros2_msg::msg::Obj2xav>::SharedPtr mindist;
+    rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr mindist;
     //rclcpp::Publisher<std_msgs::msg::Float32MultiArray>::SharedPtr cal_dist;
 
     bool first_frame = true;

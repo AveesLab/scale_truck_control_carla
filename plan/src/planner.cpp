@@ -11,7 +11,7 @@ Planner::Planner()
 {
     this->get_parameter("truck_name", truck_name);
     if (truck_name == "truck0") lv = true;
-    DistanceSubscriber_ = this->create_subscription<ros2_msg::msg::Obj2xav>("min_distance", 10, std::bind(&Planner::DistanceSubCallback, this, std::placeholders::_1));
+    DistanceSubscriber_ = this->create_subscription<std_msgs::msg::Float32>("min_distance", 10, std::bind(&Planner::DistanceSubCallback, this, std::placeholders::_1));
     TargetSubscriber_ = this->create_subscription<ros2_msg::msg::Target>("target",10,std::bind(&Planner::TargetSubCallback,this,std::placeholders::_1));
     EmergencyPublisher_ = this->create_publisher<std_msgs::msg::Bool>("emergency_brake", 10);
     timer_ = this->create_wall_timer(10ms, std::bind(&Planner::timerCallback, this));
@@ -24,8 +24,8 @@ void Planner::TargetSubCallback(const ros2_msg::msg::Target::SharedPtr msg) {
     this->emergency_flag = msg->emergency_flag;
 }
 
-void Planner::DistanceSubCallback(const ros2_msg::msg::Obj2xav::SharedPtr msg) {
-    this->current_distance = msg->min_dist;
+void Planner::DistanceSubCallback(const std_msgs::msg::Float32::SharedPtr msg) {
+    this->current_distance = msg->data;
 }
 
 bool Planner::check_collision() {

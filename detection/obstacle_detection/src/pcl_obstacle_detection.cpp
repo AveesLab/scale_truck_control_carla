@@ -73,7 +73,7 @@ PclObstacleDetection::PclObstacleDetection(
 
   cc_pos=this->create_publisher<std_msgs::msg::Float32MultiArray>("raw_obstacles",100);//clusterCenter1
   bbox_markers_pub_ = this->create_publisher<visualization_msgs::msg::MarkerArray>("viz", 10);
-  mindist=this->create_publisher<ros2_msg::msg::Obj2xav>("min_distance", 10);
+  mindist=this->create_publisher<std_msgs::msg::Float32>("min_distance", 10);
 }
 
 void PclObstacleDetection::kft(const std_msgs::msg::Float32MultiArray ccs)
@@ -499,8 +499,8 @@ void PclObstacleDetection::cloud_callback(const sensor_msgs::msg::PointCloud2::C
 
             }
         
-            ros2_msg::msg::Obj2xav dist;
-            dist.min_dist = mindist_this_cluster;   
+            std_msgs::msg::Float32 dist;
+            dist.data = mindist_this_cluster;   
             mindist->publish(dist);// Publish cluster min_distance.
 
 //        RCLCPP_INFO(this->get_logger(), "mindist = %f", mindist_this_cluster);
