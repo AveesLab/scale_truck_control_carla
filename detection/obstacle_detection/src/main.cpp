@@ -20,7 +20,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#include "pcl_object_detection.hpp"
+#include "pcl_obstacle_detection.hpp"
 
 int main(int argc, char * argv[])
 {
@@ -33,7 +33,7 @@ int main(int argc, char * argv[])
     rclcpp::executors::SingleThreadedExecutor exec;
 
     const rclcpp::NodeOptions options;
-    auto my_node = std::make_shared<pcl_object_detection::PclObjectDetection>(options);
+    auto my_node = std::make_shared<pcl_obstacle_detection::PclObstacleDetection>(options);
     //auto pcl_object_detection = rclcpp::Node::make_shared("PclObjectDetection");
 
     exec.add_node(my_node);

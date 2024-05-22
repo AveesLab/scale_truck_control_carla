@@ -48,9 +48,9 @@ private:
     float spacing_err = 0.0f;
     float speed_err = 0.0f;
     float myGapControlGainGap = 0.45f;
-    float myGapControlGainGapDot = 0.35f;
+    float myGapControlGainGapDot = 0.25f;
     float current_velocity = 0.0f;
-    rclcpp::Subscription<ros2_msg::msg::Obj2xav>::SharedPtr DistanceSubscriber_;
+    rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr DistanceSubscriber_;
     rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr VelocitySubscriber_;
     rclcpp::Subscription<ros2_msg::msg::Target>::SharedPtr TargetSubscriber_;
     rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr EmergencyPublisher_;
@@ -61,7 +61,7 @@ private:
     float calculate_target_velocity();
     void send_full_brake();
     bool check_collision();
-    void DistanceSubCallback(const ros2_msg::msg::Obj2xav::SharedPtr msg);
+    void DistanceSubCallback(const std_msgs::msg::Float32::SharedPtr msg);
     void TargetSubCallback(const ros2_msg::msg::Target::SharedPtr msg);
     void velocity_callback(const std_msgs::msg::Float32::SharedPtr msg);
     void calculate_cacc_param();

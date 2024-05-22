@@ -47,7 +47,7 @@ LaneDetector::LaneDetector()
   qos.best_effort();
 
   ImageSubscriber_ = this->create_subscription<sensor_msgs::msg::Image>(ImageSubTopicName, qos, std::bind(&LaneDetector::ImageSubCallback, this, std::placeholders::_1));
-  DistanceSubscriber_ = this->create_subscription<ros2_msg::msg::Obj2xav>("min_distance", 10, std::bind(&LaneDetector::DistanceSubCallback, this, std::placeholders::_1));
+  DistanceSubscriber_ = this->create_subscription<std_msgs::msg::Float32>("min_distance", 10, std::bind(&LaneDetector::DistanceSubCallback, this, std::placeholders::_1));
 
   /***********************/
   /* Ros Topic Publisher */
@@ -364,8 +364,8 @@ void LaneDetector::ImageSubCallback(const sensor_msgs::msg::Image::SharedPtr msg
     camImageCopy_ = prev_img;
   }
 }
-void LaneDetector::DistanceSubCallback(const ros2_msg::msg::Obj2xav::SharedPtr msg) {
- // int droi_distance = (int)((10.0f - msg->min_dist)*45.33f);
+void LaneDetector::DistanceSubCallback(const std_msgs::msg::Float32::SharedPtr msg) {
+ // int droi_distance = (int)((10.0f - msg->data)*45.33f);
  // dist_mutex_.lock();
  // distance_ = droi_distance;
  // dist_mutex_.unlock();
