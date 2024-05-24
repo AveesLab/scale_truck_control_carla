@@ -48,7 +48,7 @@ private:
     float spacing_err = 0.0f;
     float speed_err = 0.0f;
     float myGapControlGainGap = 0.45f;
-    float myGapControlGainGapDot = 0.25f;
+    float myGapControlGainGapDot = 0.35f;
     float current_velocity = 0.0f;
     rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr DistanceSubscriber_;
     rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr VelocitySubscriber_;

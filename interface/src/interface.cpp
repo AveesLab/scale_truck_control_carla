@@ -17,7 +17,7 @@ interface::interface()
     CmdSubscriber_ = this->create_subscription<ros2_msg::msg::Cmd2xav>("/cmd2xav_msg",CmdSubQos,std::bind(&interface::CmdSubCallback,this,std::placeholders::_1));
 
     TargetPublisher_ =  this->create_publisher<ros2_msg::msg::Target>("target", 10);
-
+    BrakePublisher_ = this->create_publisher<std_msgs::msg::Bool>("emergency_brake",10);
     ScenarioVelocitySubscriber_ = this->create_subscription<std_msgs::msg::Float32>("/cmd2xav_target_vel",ScenarioSubQos,std::bind(&interface::ScenarioVelocitySubCallback,this,std::placeholders::_1));
     ScenarioBrakeSubscriber_ = this->create_subscription<std_msgs::msg::Bool>("/cmd2xav_brake",ScenarioSubQos,std::bind(&interface::ScenarioBrakeSubCallback,this,std::placeholders::_1));
     ScenarioTimegapSubscriber_ = this->create_subscription<std_msgs::msg::Float32>("/cmd2xav_timegap",ScenarioSubQos,std::bind(&interface::ScenarioTimegapSubCallback,this,std::placeholders::_1));
@@ -37,10 +37,13 @@ void interface::ScenarioVelocitySubCallback(const std_msgs::msg::Float32::Shared
 void interface::ScenarioBrakeSubCallback(const std_msgs::msg::Bool::SharedPtr msg) {
     this->emergency_flag = msg->data;
     ros2_msg::msg::Target tar;
+    std_msgs::msg::Bool brake_bool;
+    brake_bool.data = this->emergency_flag;
     tar.emergency_flag = this->emergency_flag;
     tar.tar_vel = this->target_velocity;
     tar.tar_dist = this->target_distance;
     TargetPublisher_->publish(tar);
+    BrakePublisher_->publish(brake_bool);
 }
 void interface::ScenarioTimegapSubCallback(const std_msgs::msg::Float32::SharedPtr msg) {
     this->target_distance = msg->data;

@@ -47,6 +47,7 @@ private:
   rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr ScenarioTimegapSubscriber_; 
   //Publisher
   rclcpp::Publisher<ros2_msg::msg::Target>::SharedPtr TargetPublisher_;
+  rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr BrakePublisher_;
 };
 
 }

@@ -15,7 +15,7 @@ Planner::Planner()
     TargetSubscriber_ = this->create_subscription<ros2_msg::msg::Target>("target",10,std::bind(&Planner::TargetSubCallback,this,std::placeholders::_1));
     EmergencyPublisher_ = this->create_publisher<std_msgs::msg::Bool>("emergency_brake", 10);
     VelocitySubscriber_ = this->create_subscription<std_msgs::msg::Float32>("velocity",1,std::bind(&Planner::velocity_callback, this, std::placeholders::_1));
-    timer_ = this->create_wall_timer(50ms, std::bind(&Planner::timerCallback, this));
+    timer_ = this->create_wall_timer(10ms, std::bind(&Planner::timerCallback, this));
     TargetVelocityPublisher_ = this->create_publisher<std_msgs::msg::Float32>("target_velocity", 10);
 }
 

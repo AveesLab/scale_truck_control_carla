@@ -22,11 +22,11 @@ def generate_launch_description():
     config_directory = os.path.join(base_directory, '../../', 'config') 
     
     ros_param_file = os.path.join(config_directory,'config.yaml')                 
-    lane_param_file = os.path.join(config_directory,'FV2.yaml')                 
+    lane_param_file = os.path.join(config_directory,'FV1.yaml')                 
 
     # Node #
     lane_detection_node=Node(
-            package='sliding_window_lane_detection',
+            package='ultra_fast_lane_detection',
             namespace='truck2',
             name='LaneDetector', # .yaml에 명시.
             executable='lane_detect_node',

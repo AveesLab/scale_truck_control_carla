@@ -56,6 +56,8 @@ void V2V::V2VSubCallback(const ros2_msg::msg::Target::SharedPtr msg) {
     tar.emergency_flag = msg->emergency_flag;
     tar.tar_vel = msg->tar_vel;
     tar.tar_dist = msg->tar_dist;
+    this->emergency_flag  = msg->emergency_flag;
+    this->target_distance = msg->tar_dist;
     TargetPublisher_->publish(tar);
 }
 
