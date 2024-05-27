@@ -13,7 +13,7 @@ cd /home && mkdir -p ros2_ws/src
 > Build ros packages
 ```
 cd /home/ros2_ws/src
-git clone -b edit https://github.com/AveesLab/scale_truck_control_carla.git
+git clone -b SEAME https://github.com/AveesLab/scale_truck_control_carla.git
 ```
 ```
 cd /home/ros2_ws
