@@ -463,9 +463,9 @@ void LaneDetector::clear_release() {
 }
 
 void LaneDetector::get_lane_coef() {
-  Mat l_fit(left_coef_), r_fit(right_coef_), c_fit(center_coef_);
+  Mat l_fit(left_coef_), r_fit(right_coef_), c_fit(center_coef_), er_fit(extra_right_coef_), ec_fit(extra_center_coef_);
 
-  lane_coef_.coef.resize(3);
+  lane_coef_.coef.resize(5);
   if (!l_fit.empty() && !r_fit.empty()) {
     lane_coef_.coef[0].a = l_fit.at<float>(2, 0);
     lane_coef_.coef[0].b = l_fit.at<float>(1, 0);
@@ -478,6 +478,15 @@ void LaneDetector::get_lane_coef() {
     lane_coef_.coef[2].a = c_fit.at<float>(2, 0);
     lane_coef_.coef[2].b = c_fit.at<float>(1, 0);
     lane_coef_.coef[2].c = c_fit.at<float>(0, 0);
+
+
+    lane_coef_.coef[3].a = er_fit.at<float>(2, 0);
+    lane_coef_.coef[3].b = er_fit.at<float>(1, 0);
+    lane_coef_.coef[3].c = er_fit.at<float>(0, 0);
+
+    lane_coef_.coef[4].a = ec_fit.at<float>(2, 0);
+    lane_coef_.coef[4].b = ec_fit.at<float>(1, 0);
+    lane_coef_.coef[4].c = ec_fit.at<float>(0, 0);
   }
 }
 
@@ -578,8 +587,10 @@ float LaneDetector::display_img(Mat _frame, int _delay, bool _view) {
 
     vector<Point2f> left_point_f; //Oringinal left lane points for transform to BEV
     vector<Point2f> right_point_f; // Oringinal right lane points for transform to BEV
+    vector<Point2f> extra_right_point_f;
     vector<Point2f> warp_left_point_f; // Transformed BEV left lane points
-    vector<Point2f> warp_right_point_f; // Transformes BEV right lane points;       
+    vector<Point2f> warp_right_point_f; // Transformes BEV right lane points;   
+    vector<Point2f> warp_extra_right_point_f;    
           
     for(int k = 0; k < OUTPUT_H-1; k++) {
         for(int ll = 0; ll < i_ind.size(); ll++) {
@@ -598,16 +609,24 @@ float LaneDetector::display_img(Mat _frame, int _delay, bool _view) {
                     temp_point.y = int( vis_h * tusimple_row_anchor[OUTPUT_H - 1 - k] / INPUT_H) - 1;
                     right_point_f.push_back(temp_point);   
                 }
+                else if ( ll == 2 && expect[OUTPUT_W * k + i_ind[ll]] != 1) { // extra_right
+                    temp_point.x = int(expect[OUTPUT_W * k + i_ind[ll]] * col_sample_w * vis_w / INPUT_W) - 1;
+                    temp_point.y = int( vis_h * tusimple_row_anchor[OUTPUT_H - 1 - k] / INPUT_H) - 1;
+                    extra_right_point_f.push_back(temp_point);   
+                }
             }
         }
     }
-    if (left_point_f.size() != 0 && right_point_f.size() != 0 ) { 
+    if (left_point_f.size() != 0 && right_point_f.size() != 0 && extra_right_point_f.size() != 0) { 
     perspectiveTransform(left_point_f , warp_left_point_f, trans); // Transform left lane points to BEV left lane points
     perspectiveTransform(right_point_f , warp_right_point_f, trans); // Transform right lane points to BEV right lane points
+    perspectiveTransform(extra_right_point_f , warp_extra_right_point_f, trans); // Transform right lane points to BEV right lane points
     vector<int> left_point_f_y; // Y BEV left lane points to get polyfit
     vector<int> left_point_f_x; // X BEV left lane points to get polyfit
     vector<int> right_point_f_y; // Y BEV right lane points to get polyfit
     vector<int> right_point_f_x; // X BEV right lane points to get polyfit
+    vector<int> extra_right_point_f_x;
+    vector<int> extra_right_point_f_y;
 
     for (int i =0 ; i < warp_left_point_f.size(); i++) {
         if (warp_left_point_f[i].y < distance_ && option_) break; // Dynamic ROI
@@ -628,29 +647,48 @@ float LaneDetector::display_img(Mat _frame, int _delay, bool _view) {
         right_point_f_y.push_back(warp_right_point_f[i].y);
         right_point_f_x.push_back(warp_right_point_f[i].x);
     }
+
+    for (int i =0 ; i < warp_extra_right_point_f.size() ; i++) {
+        if (warp_extra_right_point_f[i].y < distance_ && option_) break; // Dynamic ROI
+            Point pp =
+                    { warp_extra_right_point_f[i].x,
+                      warp_extra_right_point_f[i].y };
+        cv::circle(warped_frame, pp, 4, CV_RGB(0, 255 ,0), -1);
+        extra_right_point_f_y.push_back(warp_extra_right_point_f[i].y);
+        extra_right_point_f_x.push_back(warp_extra_right_point_f[i].x);
+    }
+
+
     // To get center polyfit
     left_coef_ = polyfit(left_point_f_y, left_point_f_x);
     right_coef_ = polyfit(right_point_f_y, right_point_f_x);
+    extra_right_coef_ = polyfit(extra_right_point_f_y, extra_right_point_f_x);
     center_coef_ = (left_coef_ + right_coef_)/2;    
+    extra_center_coef_ = (right_coef_ + extra_right_coef_)/2;
     get_lane_coef();
 
 
   if (_view) {
         vector<Point2f> warp_left_point2f;
         vector<Point2f> warp_right_point2f;
+        vector<Point2f> warp_extra_right_point2f;
         vector<Point2f> reverse_left_point2f;
         vector<Point2f> reverse_right_point2f;
-
+        vector<Point2f> reverse_extra_right_point2f;
 
 
        //To draw lane in BEV
         vector<Point> left_point;
         vector<Point> right_point;
+        vector<Point> extra_right_point;
         vector<Point> center_point;
+        vector<Point> extra_center_point;
             for (int i = option_ ? distance_: 0; i <= 480; i++) {
                 Point temp_left_point;
                 Point temp_right_point;
                 Point temp_center_point;
+                Point temp_extra_right_point;
+                Point temp_extra_center_point;
 
                 temp_left_point.x = (int)((left_coef_.at<float>(2, 0) * pow(i, 2)) + (left_coef_.at<float>(1, 0) * i) + left_coef_.at<float>(0, 0));
                 temp_left_point.y = (int)i;
@@ -658,13 +696,20 @@ float LaneDetector::display_img(Mat _frame, int _delay, bool _view) {
                 temp_right_point.y = (int)i;
                 temp_center_point.x = (int)((center_coef_.at<float>(2, 0) * pow(i, 2)) + (center_coef_.at<float>(1, 0) * i) + center_coef_.at<float>(0, 0));
                 temp_center_point.y = (int)i;
+                temp_extra_center_point.x = (int)((extra_center_coef_.at<float>(2, 0) * pow(i, 2)) + (extra_center_coef_.at<float>(1, 0) * i) + extra_center_coef_.at<float>(0, 0));
+                temp_extra_center_point.y = (int)i;
+                temp_extra_right_point.x = (int)((extra_right_coef_.at<float>(2, 0) * pow(i, 2)) + (extra_right_coef_.at<float>(1, 0) * i) + extra_right_coef_.at<float>(0, 0));
+                temp_extra_right_point.y = (int)i;
 
                 left_point.push_back(temp_left_point);
                 right_point.push_back(temp_right_point);
                 center_point.push_back(temp_center_point);
+                extra_center_point.push_back(temp_extra_center_point);
+                extra_right_point.push_back(temp_extra_right_point);
 
                 warp_left_point2f.push_back(temp_left_point);
                 warp_right_point2f.push_back(temp_right_point);
+                warp_extra_right_point2f.push_back(temp_extra_right_point);
             }
 
 
@@ -674,41 +719,48 @@ float LaneDetector::display_img(Mat _frame, int _delay, bool _view) {
             int right_points_number_ = Mat(right_point).rows;
             const Point* center_points_point_ = (const cv::Point*) Mat(center_point).data;
             int center_points_number_ = Mat(center_point).rows;
+            const Point* extra_center_points_point_ = (const cv::Point*) Mat(extra_center_point).data;
+            int extra_center_points_number_ = Mat(extra_center_point).rows;
+            const Point* extra_right_points_point_ = (const cv::Point*) Mat(extra_right_point).data;
+            int extra_right_points_number_ = Mat(extra_right_point).rows;
 
 
             polylines(warped_frame, &left_points_point_, &left_points_number_, 1, false, Scalar(255, 100, 100), 10);
             polylines(warped_frame, &right_points_point_, &right_points_number_, 1, false, Scalar(255, 100, 100), 10);
             polylines(warped_frame, &center_points_point_, &center_points_number_, 1, false, Scalar(200, 255, 200), 10);
-
+            polylines(warped_frame, &extra_center_points_point_, &extra_center_points_number_, 1, false, Scalar(200, 255, 200), 10);
+            polylines(warped_frame, &extra_right_points_point_, &extra_right_points_number_, 1, false, Scalar(255, 100, 100), 10);
 
             //To draw lane in Original image
             perspectiveTransform(warp_left_point2f , reverse_left_point2f, reverse_trans);
             perspectiveTransform(warp_right_point2f , reverse_right_point2f, reverse_trans);
-
+            perspectiveTransform(warp_extra_right_point2f , reverse_extra_right_point2f, reverse_trans);
             
-            std::vector<Point> leftInt, rightInt;
+            std::vector<Point> leftInt, rightInt, extrarightInt;
             for(const auto& p:reverse_left_point2f) leftInt.push_back(Point(static_cast<int>(p.x), static_cast<int>(p.y)));
             for(const auto& p:reverse_right_point2f) rightInt.push_back(Point(static_cast<int>(p.x), static_cast<int>(p.y)));
+            for(const auto& p:reverse_extra_right_point2f) extrarightInt.push_back(Point(static_cast<int>(p.x), static_cast<int>(p.y)));
 
             const Point* leftInt_points = (const cv::Point*) Mat(leftInt).data;
             int leftInt_points_number_ = Mat(leftInt).rows;
             const Point* rightInt_points = (const cv::Point*) Mat(rightInt).data;
             int rightInt_points_number_ = Mat(rightInt).rows;
-
+            const Point* extrarightInt_points = (const cv::Point*) Mat(extrarightInt).data;
+            int extrarightInt_points_number_ = Mat(extrarightInt).rows;
 
             polylines(_frame, &leftInt_points, &leftInt_points_number_, 1, false, Scalar(255, 100, 100), 10);
             polylines(_frame, &rightInt_points, &rightInt_points_number_, 1, false, Scalar(255, 100, 100), 10);          
-           
+            polylines(_frame, &extrarightInt_points, &extrarightInt_points_number_, 1, false, Scalar(255, 100, 100), 10);
 
             //fillPoly, Drivable Area
-            std::reverse(rightInt.begin(), rightInt.end());
-            leftInt.insert(leftInt.end(), rightInt.begin(), rightInt.end());
-            std::vector<std::vector<cv::Point>> pts;
-            pts.push_back(leftInt);
+            //std::reverse(rightInt.begin(), rightInt.end());
+            //leftInt.insert(leftInt.end(), rightInt.begin(), rightInt.end());
+            //std::vector<std::vector<cv::Point>> pts;
+            //pts.push_back(leftInt);
 
-            fillPoly(orig_img, pts, cv::Scalar(255,191,0));
+            //fillPoly(orig_img, pts, cv::Scalar(255,191,0));
 
-            addWeighted( orig_img, 0.3, _frame, 0.7,0.0,blended);
+            //addWeighted( orig_img, 0.3, _frame, 0.7,0.0,blended);
             //end fillpoly
 
 
@@ -728,7 +780,7 @@ float LaneDetector::display_img(Mat _frame, int _delay, bool _view) {
       imshow("Window2", warped_frame);
     }
     if(!_frame.empty()){
-      imshow("Window3", blended);
+      imshow("Window3", _frame);
     }
 
     waitKey(_delay);

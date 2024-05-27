@@ -18,12 +18,14 @@
 #include "std_msgs/msg/header.hpp"
 #include <cv_bridge/cv_bridge.h>
 #include <opencv2/opencv.hpp>
+#include "spline.h"
 
 //ROS2
 #include "rclcpp/rclcpp.hpp"
 #include "ros2_msg/msg/xav2lane.hpp"
 #include "ros2_msg/msg/lane2xav.hpp"
 #include "std_msgs/msg/float32.hpp"
+#include "std_msgs/msg/bool.hpp"
 
 #define _GUN_SOURCE
 
@@ -39,14 +41,21 @@ namespace lanekeeping {
     LaneKeeping();
     //Timer
     void get_steer_coef(float vel);
-    float K1_, K2_;
+    float K1_, K2_,K3_,K4_;
     float cur_vel_ = 0.0f;
-    void controlSteer(Mat left, Mat right, Mat center);
+    void controlSteer();
     ros2_msg::msg::Lane2xav lane_coef_, poly_coef_;
     Mat left;
     Mat right;
     Mat center;
+    vector<Mat> line_;
     std_msgs::msg::Float32 steer_;
+    int current_center = 2; // or 4(right)
+    bool lc_right_flag_ = false;
+    bool lc_left_flag_ = false;
+    bool lane_keeping = true;
+    int right_cnt = 0;
+    int left_cnt = 0;
   private:
     void LoadParams(void);
   
@@ -55,12 +64,12 @@ namespace lanekeeping {
     //Subscriber
     rclcpp::Subscription<ros2_msg::msg::Xav2lane>::SharedPtr XavSubscriber_;
     rclcpp::Subscription<ros2_msg::msg::Lane2xav>::SharedPtr LaneSubscriber_;
-  
+    rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr LaneChangeSubscriber_;
     //Callback Func
     void XavSubCallback(const ros2_msg::msg::Xav2lane::SharedPtr msg);
     void LaneSubCallback(const ros2_msg::msg::Lane2xav::SharedPtr msg);
-  
-  
+    void LaneChangeSubCallback(const std_msgs::msg::Bool::SharedPtr msg);
+    tk::spline cspline(int mark_);
     float SteerAngle_;
     float eL_height_, e1_height_, lp_, trust_height_;
     float K_;

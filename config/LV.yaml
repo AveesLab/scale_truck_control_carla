@@ -10,7 +10,7 @@
     publishers/lane_to_xavier/topic: lane2xav_msg
     publishers/lane_to_xavier/queue_size: 1
 
-    image_view/enable_opencv: false
+    image_view/enable_opencv: true
     image_view/wait_key_delay: 1
     image_view/TEST: false
 
@@ -45,14 +45,14 @@
 
     ROI/front_cam/width: 640
     ROI/front_cam/height: 480
-    ROI/front_cam/top_gap: 0.415 #0.390(11m)
-    ROI/front_cam/bot_gap: 0.310  #0.305(11m) 
-    ROI/front_cam/top_height: 0.99
-    ROI/front_cam/bot_height: 0.48  #0.50 (11m)
-    ROI/front_cam/extra_f: 0.00 
-    ROI/front_cam/extra_b: 0.00 
-    ROI/front_cam/extra_up: 50 #50(11m)
-    ROI/front_cam/extra_down: 180
+    ROI/front_cam/top_gap: 0.415 #0.390(11m) #0.415(orig)
+    ROI/front_cam/bot_gap: 0.310  #0.305(11m) #0.310(orig)
+    ROI/front_cam/top_height: 0.99 #0.99(orig)
+    ROI/front_cam/bot_height: 0.48  #0.50 (11m) #0.48(orig)
+    ROI/front_cam/extra_f: 0.00 #0.00(orig)
+    ROI/front_cam/extra_b: 0.00 #0.00(orig)
+    ROI/front_cam/extra_up: 140 #50(11m) #50(orig)
+    ROI/front_cam/extra_down: 220 #180(orig)
 
     ROI/wide_right/width: 640
     ROI/wide_right/height: 480
