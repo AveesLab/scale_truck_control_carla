@@ -6,8 +6,6 @@
 #include "rclcpp/rclcpp.hpp"
 #include "std_msgs/msg/string.hpp"
 #include "std_msgs/msg/int32.hpp"
-#include "ros2_msg/msg/ocr2lrc.hpp"
-#include "ros2_msg/msg/lrc2ocr.hpp"
 #include "std_msgs/msg/float32.hpp"
 
 using namespace std::chrono_literals;

@@ -15,7 +15,7 @@
 #include <limits>
 #include <random>
 #include <condition_variable>
-
+#include <mutex>
 #include <cv_bridge/cv_bridge.h>
 #include <image_transport/image_transport.hpp>
 #include "sensor_msgs/msg/image.hpp"
@@ -25,9 +25,7 @@
 
 //ROS2
 #include "rclcpp/rclcpp.hpp"
-#include "ros2_msg/msg/xav2lane.hpp"
 #include "ros2_msg/msg/lane2xav.hpp"
-#include "ros2_msg/msg/obj2xav.hpp"
 #include "std_msgs/msg/float32.hpp"
 
 #define _GUN_SOURCE
@@ -76,8 +74,6 @@ private:
   Mat detect_lines_sliding_window(Mat _frame, bool _view);
   Point warpPoint(Point center, Mat trans);
   float lowPassFilter(double sampling_time, float est_value, float prev_res);
-  float lowPassFilter2(double sampling_time, float est_value, float prev_res);
-  Mat estimateDistance(Mat frame, Mat trans, double cycle_time, bool _view);
   Mat draw_lane(Mat _sliding_frame, Mat _frame);
   Mat drawBox(Mat frame);
   void get_lane_coef();
@@ -86,14 +82,11 @@ private:
   cv::Point2f transformPoint(const cv::Point& pt, const cv::Mat& camera_matrix, const cv::Mat& dist_coeffs); 
 
   //Publisher
-  rclcpp::Publisher<ros2_msg::msg::Lane2xav>::SharedPtr XavPublisher_;
-  rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr SteerPublisher_;
+  rclcpp::Publisher<ros2_msg::msg::Lane2xav>::SharedPtr LanePublisher_;
   //Subscriber
-  rclcpp::Subscription<ros2_msg::msg::Xav2lane>::SharedPtr XavSubscriber_;
   rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr ImageSubscriber_;
   rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr DistanceSubscriber_;
   //Callback Func
-  void XavSubCallback(const ros2_msg::msg::Xav2lane::SharedPtr msg);
   void ImageSubCallback(const sensor_msgs::msg::Image::SharedPtr msg);
   void DistanceSubCallback(const std_msgs::msg::Float32::SharedPtr msg);
   bool viewImage_;
@@ -103,42 +96,21 @@ private:
   bool controlDone_ = false;
   ros2_msg::msg::Lane2xav lane_coef_;
   int center_select_ = 1;
-  bool TEST = false;
-  float frontRoi_ratio = 0.0f;
-  float rearRoi_ratio = 0.0f;
 
   // lane change
-  bool wroi_flag_ = false;
   bool L_flag = true;
   bool R_flag = true;
-  bool E_flag = true;
-  bool E2_flag = true;
-  bool lc_center_follow_ = true;
-  bool lc_right_flag = false;
-  bool lc_right_flag_ = false;
-  bool lc_left_flag = false;
-  bool lc_left_flag_ = false;
 
   //image
   bool imageStatus_ = false;
-  std_msgs::msg::Header imageHeader_;
   cv::Mat camImageCopy_;
-  float AngleDegree_;
-  cv::Mat prev_frame, prev2_frame;
   cv::Mat cluster_frame;
-
-  //rear
-  bool rear_view_ = false;
-  bool rearImageStatus_ = false;
-  std_msgs::msg::Header rearImageHeader_;
-  cv::Mat rearCamImageCopy_;
 
   /*  Callback Synchronisation  */
   mutex cam_mutex;
   mutex dist_mutex_;
   bool cam_new_frame_arrived;
   condition_variable cam_condition_variable;
-
 
   std::thread lanedetect_Thread;
   void lanedetectInThread();
@@ -150,30 +122,12 @@ private:
   int canny_thresh1_, canny_thresh2_;
 
   /********** Lane_detect ***********/
-  vector<Point2f> test_corners_, corners_, fROIcorners_, rROIcorners_, lROIcorners_, rearROIcorners_, testROIcorners_;
-  vector<Point2f> test_warpCorners_, warpCorners_, fROIwarpCorners_, rROIwarpCorners_, lROIwarpCorners_, rearROIwarpCorners_, testROIwarpCorners_;
+  vector<Point2f> corners_, fROIcorners_;
+  vector<Point2f> warpCorners_, fROIwarpCorners_;
 
   int last_Llane_base_;
   int last_Rlane_base_;
-  int last_Elane_base_;
-  int last_E2lane_base_;
 
-  float left_curve_radius_;
-  float right_curve_radius_;
-  float center_position_;
-  float SteerAngle_;
-  float SteerAngle2_;
-  float eL_height_, trust_height_, e1_height_, lp_;
-  float eL_height2_;
-  float K_;
-  double a_[5], b_[5];
-  double a2_[3], b2_[3];
-  vector<float> e_values_;
-  float target_x_;
-  float target_y_;
-
-  vector<int> left_lane_inds_;
-  vector<int> right_lane_inds_;
   vector<int> left_x_;
   vector<int> left_y_;
   vector<int> right_x_;
@@ -181,16 +135,9 @@ private:
   vector<int> center_x_;
   vector<int> center_y_;
 
-  /********** PID control ***********/
-  int prev_lane_, prev_pid_;
-  double Kp_term_, Ki_term_, Kd_term_, err_, prev_err_, I_err_, D_err_, result_;
-
   int width_, height_;
   bool option_; // dynamic ROI
   int threshold_;
-  double diff_;
-
-  int crop_x_, crop_y_, crop_width_, crop_height_;
 
   int Threshold_box_size_, Threshold_box_offset_;
 

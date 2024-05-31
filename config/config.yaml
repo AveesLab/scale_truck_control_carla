@@ -37,36 +37,5 @@
     params/lv_stop_dist: 3.0
     params/fv_stop_dist: 3.0
 
-    rss/a_max_accel: 0.100 #6.9 #0.087 
-    rss/a_min_brake: -0.225 #3.22 #-0.083
-    rss/a_max_brake: -0.472 #0.6 #2.136
-    rss/response_time: 1.23 #0.160 # 0.059
-    rss/SV_Vel_: 0.7  # 0.7 0.8 0.9
-#    rss/Truck_Vel_: # 0.6 0.8 1.0
-
-#    icra/dist: 0.8 # FOR ICRA
-
     image_view/enable_console_output: false
-    image_view/lane_change_right: false # cmd lane change
-    image_view/lane_change_left: false 
-
-/**/LRC:
-  ros__parameters:
-    LrcSub/xavier_to_lrc/topic: xav2lrc_msg
-    LrcSub/xavier_to_lrc/queue_size: 1
-    LrcSub/ocr_to_lrc/topic: ocr2lrc_msg
-    LrcSub/ocr_to_lrc/queue_size: 1
-    LrcSub/lv_to_fv/topic: /lv2fv_msg
-    LrcSub/lv_to_fv/queue_size: 1
-
-    LrcPub/lrc_to_xavier/topic: lrc2xav_msg
-    LrcPub/lrc_to_xavier/queue_size: 1
-    LrcPub/lrc_to_ocr/topic: lrc2ocr_msg
-    LrcPub/lrc_to_ocr/queue_size: 1
-    LrcPub/lv_to_fv/topic: /lv2fv_msg
-    LrcPub/lv_to_fv/queue_size: 1
-
-    #LrcParams/lrc_index: 12
-    LrcParams/lrc_log_path: /home/avees/ros2_ws/logfiles/
-    LrcParams/enable_console_output: false
 

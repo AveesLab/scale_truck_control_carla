@@ -10,39 +10,23 @@ LaneKeeping::LaneKeeping()
   /**************/
   /* ROS2 Topic */
   /**************/
-  std::string XavSubTopicName;
-  int XavSubQueueSize;
-  std::string LaneTopicName;
-  int LaneQueueSize; 
-  std::string XavPubTopicName;
-  int XavPubQueueSize;
+  //subscribe : velocity, lane information
+  //publish   : steer value	
 
-  /******************************/
-  /* Ros Topic Subscribe Option */
-  /******************************/
-  this->get_parameter_or("subscribers/xavier_to_lane/topic", XavSubTopicName, std::string("xav2lane_msg"));
-  this->get_parameter_or("subscribers/xavier_to_lane/queue_size", XavSubQueueSize, 1);
-  this->get_parameter_or("subscribers/lane_to_xavier/topic", LaneTopicName, std::string("laneinfo"));
-  this->get_parameter_or("subscribers/lane_to_xavier/queue_size", LaneQueueSize, 1);
-  
   /************************/
   /* Ros Topic Subscriber */
   /************************/
   rclcpp::QoS qos(rclcpp::QoSInitialization::from_rmw(rmw_qos_profile_sensor_data));
   qos.best_effort();
-  XavSubscriber_ = this->create_subscription<ros2_msg::msg::Xav2lane>(XavSubTopicName, XavSubQueueSize, std::bind(&LaneKeeping::XavSubCallback, this, std::placeholders::_1));
-  LaneSubscriber_ = this->create_subscription<ros2_msg::msg::Lane2xav>(LaneTopicName, LaneQueueSize, std::bind(&LaneKeeping::LaneSubCallback, this, std::placeholders::_1));
+  VelocitySubscriber_ = this->create_subscription<std_msgs::msg::Float32>("velocity", 1, std::bind(&LaneKeeping::VelocitySubCallback, this, std::placeholders::_1));
+  LaneSubscriber_ = this->create_subscription<ros2_msg::msg::Lane2xav>("laneinfo", 10, std::bind(&LaneKeeping::LaneSubCallback, this, std::placeholders::_1));
 
   /***********************/
   /* Ros Topic Publisher */
   /***********************/
-  SteerPublisher_ = this->create_publisher<std_msgs::msg::Float32>("steer_control",XavPubQueueSize);
+  SteerPublisher_ = this->create_publisher<std_msgs::msg::Float32>("steer_control", 1);
 
   /********** PID control ***********/
-//  left_coef_ = Mat::zeros(3, 1, CV_32F);
-//  right_coef_ = Mat::zeros(3, 1, CV_32F);
-//  center_coef_ = Mat::zeros(3, 1, CV_32F);
-
   lane_coef_.coef.resize(3);
   poly_coef_.coef.resize(3);
   e_values_.resize(2);
@@ -71,18 +55,17 @@ LaneKeeping::LaneKeeping()
 void LaneKeeping::LoadParams(void)
 {
   this->get_parameter_or("LaneKeeping/eL_height",eL_height_, 0.2f);  
-  this->get_parameter_or("LaneKeeping/e1_height",e1_height_, 1.1852f);  
+  this->get_parameter_or("LaneKeeping/e1_height",e1_height_, 0.6667f);  
   this->get_parameter_or("LaneKeeping/lp",lp_, 609.3f);  
   this->get_parameter_or("LaneKeeping/steer_angle",SteerAngle_, 0.0f);
-  this->get_parameter_or("LaneKeeping/trust_height",trust_height_, 0.6667f);  
 
   K1_ = (a_[0] * pow(1.2f, 4)) + (a_[1] * pow(1.2f, 3)) + (a_[2] * pow(1.2f, 2)) + (a_[3] * 1.2f) + a_[4];
   K2_ = (b_[0] * pow(1.2f, 4)) + (b_[1] * pow(1.2f, 3)) + (b_[2] * pow(1.2f, 2)) + (b_[3] * 1.2f) + b_[4];
 }
 //sub cur vel from speed control
-void LaneKeeping::XavSubCallback(const ros2_msg::msg::Xav2lane::SharedPtr msg)
+void LaneKeeping::VelocitySubCallback(const std_msgs::msg::Float32::SharedPtr msg)
 {
-  cur_vel_ = msg->cur_vel;
+  cur_vel_ = msg->data;
   get_steer_coef(cur_vel_);
 }
 
@@ -109,10 +92,11 @@ void LaneKeeping::LaneSubCallback(const ros2_msg::msg::Lane2xav::SharedPtr msg)
 
 void LaneKeeping::get_steer_coef(float vel){
   float value;
-  if (vel > 1.2f)
-    value = 1.2f;
+  if (vel > 1.5f)
+  	value = 1.2f;
+//  	cout << value << '\n';}
   else
-    value = vel;
+    value = 1.2f;
 
   if (value < 0.65f){
     K1_ = K2_ =  K_;
@@ -128,18 +112,18 @@ void LaneKeeping::controlSteer(Mat left, Mat right, Mat center) {
   float car_position = 320.0; //width of image / 2
   float l1 = 0.0f, l2 = 0.0f;
   float i = 480.0 * eL_height_;  
-  float j = 480.0 * trust_height_;
+  float j = 480.0 * e1_height_;
 
   if (!left.empty() && !right.empty()) {
 
-    lane_coef_.coef[0].a = left.at<float>(2, 0);
-    lane_coef_.coef[0].b = left.at<float>(1, 0);
-    lane_coef_.coef[0].c = left.at<float>(0, 0);
-
-    lane_coef_.coef[1].a = right.at<float>(2, 0);
-    lane_coef_.coef[1].b = right.at<float>(1, 0);
-    lane_coef_.coef[1].c = right.at<float>(0, 0);
-
+//    lane_coef_.coef[0].a = left.at<float>(2, 0);
+//    lane_coef_.coef[0].b = left.at<float>(1, 0);
+//    lane_coef_.coef[0].c = left.at<float>(0, 0);
+//
+//    lane_coef_.coef[1].a = right.at<float>(2, 0);
+//    lane_coef_.coef[1].b = right.at<float>(1, 0);
+//    lane_coef_.coef[1].c = right.at<float>(0, 0);
+//
     lane_coef_.coef[2].a = center.at<float>(2, 0);
     lane_coef_.coef[2].b = center.at<float>(1, 0);
     lane_coef_.coef[2].c = center.at<float>(0, 0);

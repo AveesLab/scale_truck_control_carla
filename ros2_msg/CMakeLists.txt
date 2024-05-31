@@ -14,18 +14,10 @@ find_package(geometry_msgs REQUIRED)
 find_package(rosidl_default_generators REQUIRED)
 
 set(msg_files
-  "msg/Ocr2lrc.msg"
-  "msg/Lrc2ocr.msg"
-  "msg/Lrc2xav.msg"
-  "msg/Xav2lrc.msg"
   "msg/Lane.msg"
-  "msg/Obj2xav.msg"
   "msg/Lane2xav.msg"
-  "msg/Xav2lane.msg"
   "msg/Cmd2xav.msg"
   "msg/Xav2cmd.msg"
-  "msg/Boundingbox.msg"
-  "msg/Yoloflag.msg"
   "msg/Target.msg"
 )
 

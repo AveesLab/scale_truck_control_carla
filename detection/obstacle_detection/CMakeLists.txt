@@ -58,7 +58,7 @@ rclcpp_components_register_nodes(object_detection_ros2 "object_detection_ros2::P
 set(node_plugins "${node_plugins}object_detection_ros2::PclObstacleDetection;$<TARGET_FILE:object_detection_ros2>\n")
 
 add_executable(obstacle_detection_node
-    src/main.cpp)
+    src/pcl_obstacle_detection.cpp)
 target_link_libraries(obstacle_detection_node
     object_detection_ros2
     laser_geometry::laser_geometry
@@ -83,12 +83,6 @@ install(TARGETS
     DESTINATION lib/${PROJECT_NAME}
 )
 
-
-# Install launch files.
-install(DIRECTORY
-    launch
-    DESTINATION share/${PROJECT_NAME}
-)
 
 #install(DIRECTORY include
 #    DESTINATION include/${PROJECT_NAME}

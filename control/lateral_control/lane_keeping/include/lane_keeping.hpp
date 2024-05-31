@@ -21,7 +21,6 @@
 
 //ROS2
 #include "rclcpp/rclcpp.hpp"
-#include "ros2_msg/msg/xav2lane.hpp"
 #include "ros2_msg/msg/lane2xav.hpp"
 #include "std_msgs/msg/float32.hpp"
 
@@ -53,11 +52,11 @@ namespace lanekeeping {
     //Publisher
     rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr SteerPublisher_;
     //Subscriber
-    rclcpp::Subscription<ros2_msg::msg::Xav2lane>::SharedPtr XavSubscriber_;
+    rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr VelocitySubscriber_;
     rclcpp::Subscription<ros2_msg::msg::Lane2xav>::SharedPtr LaneSubscriber_;
   
     //Callback Func
-    void XavSubCallback(const ros2_msg::msg::Xav2lane::SharedPtr msg);
+    void VelocitySubCallback(const std_msgs::msg::Float32::SharedPtr msg);
     void LaneSubCallback(const ros2_msg::msg::Lane2xav::SharedPtr msg);
   
   

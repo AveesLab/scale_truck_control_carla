@@ -4,6 +4,12 @@
 Controller::Controller()
           : Node("controller")
 {
+  /**************/
+  /* ROS2 Topic */
+  /**************/
+  //subscribe : velocity, target velocity
+  //publish   : throttle value
+
   auto qos_profile = rclcpp::QoS(rclcpp::KeepLast(10));
 
   TargetVelocitysubscriber_ = this->create_subscription<std_msgs::msg::Float32>(

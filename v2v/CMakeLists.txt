@@ -13,7 +13,6 @@ find_package(std_msgs REQUIRED)
 find_package(ros2_msg REQUIRED)
 
 set(PROJECT_SOURCES
-  src/main.cpp
   src/v2v.cpp
   include/v2v.hpp
 )

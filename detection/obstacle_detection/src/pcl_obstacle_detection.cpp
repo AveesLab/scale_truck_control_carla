@@ -37,6 +37,12 @@ PclObstacleDetection::PclObstacleDetection(
   const rclcpp::NodeOptions& options
 ): Node("ObstacleDetection", name_space, options)
 {
+  /**************/
+  /* ROS2 Topic */
+  /**************/
+  //subscribe : lidar point
+  //publish   : distance information	
+
   RCLCPP_INFO(this->get_logger(),"PclObstacleDetection init complete!");
 
   // Store clock
@@ -69,7 +75,6 @@ PclObstacleDetection::PclObstacleDetection(
   pub_cluster5 = this->create_publisher<sensor_msgs::msg::PointCloud2>("cluster_5", 1);
 
   object_ids_pub_ = this->create_publisher<std_msgs::msg::Int32MultiArray>("obj_id", 1);
-
 
   cc_pos=this->create_publisher<std_msgs::msg::Float32MultiArray>("raw_obstacles",100);//clusterCenter1
   bbox_markers_pub_ = this->create_publisher<visualization_msgs::msg::MarkerArray>("viz", 10);
@@ -607,3 +612,25 @@ void PclObstacleDetection::cloud_callback(const sensor_msgs::msg::PointCloud2::C
 }
 
 }  // namespace pcl_obstacle_detection
+
+int main(int argc, char * argv[])
+{
+    // Force flush of the stdout buffer.
+    // This ensures a correct sync of all prints
+    // even when executed simultaneously within a launch file.
+    setvbuf(stdout, NULL, _IONBF, BUFSIZ);
+
+    rclcpp::init(argc, argv);
+    rclcpp::executors::SingleThreadedExecutor exec;
+
+    const rclcpp::NodeOptions options;
+    auto my_node = std::make_shared<pcl_obstacle_detection::PclObstacleDetection>(options);
+    //auto pcl_object_detection = rclcpp::Node::make_shared("PclObjectDetection");
+
+    exec.add_node(my_node);
+
+    exec.spin();
+
+    rclcpp::shutdown();
+    return 0;
+}

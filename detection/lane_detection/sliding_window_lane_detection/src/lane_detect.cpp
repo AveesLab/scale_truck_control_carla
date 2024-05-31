@@ -10,37 +10,23 @@ LaneDetector::LaneDetector()
   /**************/
   /* ROS2 Topic */
   /**************/
-  std::string ImageSubTopicName;
-  int ImageSubQueueSize;
-
-  std::string XavPubTopicName;
-  int XavPubQueueSize;
-
-  /******************************/
-  /* Ros Topic Subscribe Option */
-  /******************************/
-  this->get_parameter_or("subscribers/image_to_lane/topic", ImageSubTopicName, std::string("usb_cam/image_raw"));
-  this->get_parameter_or("subscribers/image_to_lane/queue_size", ImageSubQueueSize, 1);
-
-  /****************************/
-  /* Ros Topic Publish Option */
-  /****************************/
-  this->get_parameter_or("publishers/lane_to_xavier/topic", XavPubTopicName, std::string("laneinfo"));
-  this->get_parameter_or("publishers/lane_to_xavier/queue_size", XavPubQueueSize, 1);
-  
+  //subscribe : camera image, distance information
+  //publish   : lane information
+	
   /************************/
   /* Ros Topic Subscriber */
   /************************/
   rclcpp::QoS qos(rclcpp::QoSInitialization::from_rmw(rmw_qos_profile_sensor_data));
   qos.best_effort();
 
-  ImageSubscriber_ = this->create_subscription<sensor_msgs::msg::Image>(ImageSubTopicName, qos, std::bind(&LaneDetector::ImageSubCallback, this, std::placeholders::_1));
-  DistanceSubscriber_ = this->create_subscription<std_msgs::msg::Float32>("min_distance", 10, std::bind(&LaneDetector::DistanceSubCallback, this, std::placeholders::_1));
+  ImageSubscriber_ = this->create_subscription<sensor_msgs::msg::Image>("front_camera", qos, std::bind(&LaneDetector::ImageSubCallback, this, std::placeholders::_1));
+  DistanceSubscriber_ = this->create_subscription<std_msgs::msg::Float32>("min_distance", 1, std::bind(&LaneDetector::DistanceSubCallback, this, std::placeholders::_1));
 
   /***********************/
   /* Ros Topic Publisher */
   /***********************/
-  XavPublisher_ = this->create_publisher<ros2_msg::msg::Lane2xav>(XavPubTopicName, XavPubQueueSize);
+  LanePublisher_ = this->create_publisher<ros2_msg::msg::Lane2xav>("laneinfo", 10);
+
   /***************/
   /* View Option */
   /***************/
@@ -150,7 +136,7 @@ LaneDetector::~LaneDetector(void)
   ros2_msg::msg::Lane2xav xav;
   xav.coef = lane_coef_.coef;
 
-  XavPublisher_->publish(xav);
+  LanePublisher_->publish(xav);
   lanedetect_Thread.join();
 
   clear_release();
@@ -196,7 +182,7 @@ void LaneDetector::lanedetectInThread()
       display_img(camImageCopy_, waitKeyDelay_, viewImage_);
     
       xav.coef = lane_coef_.coef; 
-      XavPublisher_->publish(xav);
+      LanePublisher_->publish(xav);
     }
 
     if(!isNodeRunning_) {
@@ -439,8 +425,6 @@ Mat LaneDetector::detect_lines_sliding_window(Mat _frame, bool _view) {
 
   vector<int> good_left_inds;
   vector<int> good_right_inds;
-  vector<int> good_extra_inds;
-  vector<int> good_extra2_inds;
 
   int* hist = new int[width];
 
@@ -470,10 +454,6 @@ Mat LaneDetector::detect_lines_sliding_window(Mat _frame, bool _view) {
   dist_mutex_.unlock();
   L_flag = true;
   R_flag = true;
-  E_flag = true;
-  E2_flag = true;
-  if(!lc_right_flag_) E_flag = false; // extra right lane is only need for right lc flag 
-  if(!lc_left_flag_) E2_flag = false; // extra left lane is only need for left lc flag 
   
   if (option_) {
     window_height = (height >= distance) ? ((height-distance) / n_windows) : (height / n_windows);  // defalut = 53
@@ -512,7 +492,6 @@ Mat LaneDetector::detect_lines_sliding_window(Mat _frame, bool _view) {
     prev_Rlane_current = 0;
     prev_R_gap = 0;
   }
-//  RCLCPP_INFO(this->get_logger(), "E2lane | Llane | Rlane | Elane | E2_flag | E_flag : %d | %d | %d | %d | %d | %d \n", E2lane_base, Llane_base, Rlane_base, Elane_base, E2_flag, E_flag);
 
   for (int window = 0; window < n_windows; window++) {
     int  Ly_pos = height - (window + 1) * window_height - 1; // win_y_low , win_y_high = win_y_low - window_height
@@ -911,8 +890,6 @@ Mat LaneDetector::draw_lane(Mat _sliding_frame, Mat _frame) {
 }
 
 void LaneDetector::clear_release() {
-  left_lane_inds_.clear();
-  right_lane_inds_.clear();
   left_x_.clear();
   left_y_.clear();
   right_x_.clear();
@@ -950,8 +927,6 @@ float LaneDetector::display_img(Mat _frame, int _delay, bool _view) {
   if(imageStatus_) {
     std::copy(fROIcorners_.begin(), fROIcorners_.end(), corners_.begin());
     std::copy(fROIwarpCorners_.begin(), fROIwarpCorners_.end(), warpCorners_.begin());
-    lc_right_flag_ = false; 
-    lc_left_flag_ = false; 
   }
 
   Mat trans = getPerspectiveTransform(corners_, warpCorners_);
@@ -998,8 +973,6 @@ float LaneDetector::display_img(Mat _frame, int _delay, bool _view) {
     moveWindow("Window2", 710, 0);
     namedWindow("Window3");
     moveWindow("Window3", 1340, 0);
-    namedWindow("Histogram Clusters");
-    moveWindow("Histogram Clusters", 710, 700);
 
     if(!new_frame.empty()) {
       imshow("Window1", new_frame);
@@ -1019,4 +992,11 @@ float LaneDetector::display_img(Mat _frame, int _delay, bool _view) {
 
 } /* namespace lane_detect */
 
+int main(int argc, char* argv[]){
+    rclcpp::init(argc, argv);
+    std::shared_ptr<rclcpp::Node> node = std::make_shared<LaneDetect::LaneDetector>();
+    rclcpp::spin(node);
+    rclcpp::shutdown();
+    return 0;
+}
 
