@@ -92,6 +92,8 @@ private:
     void publish_object_ids(std::vector<int> obj_ids);
     void initialize_kalman_filter();
     void cloud_callback(const sensor_msgs::msg::PointCloud2::ConstPtr &scan);
+    pcl::PointCloud<pcl::PointXYZ>::Ptr mergeClusters(const std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr>& cluster_vec);
+    void publish_combined_cloud(rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr &pub, const pcl::PointCloud<pcl::PointXYZ>::Ptr& combined_cluster);
     rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr subscription_;
 
 
@@ -101,7 +103,7 @@ private:
     rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pub_cluster3;
     rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pub_cluster4;
     rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pub_cluster5;
-
+    rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pub_combined_cluster;
     rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr bbox_markers_pub_;
     rclcpp::Publisher<std_msgs::msg::Int32MultiArray>::SharedPtr object_ids_pub_;
 

@@ -49,7 +49,7 @@ LaneKeeping::LaneKeeping()
     left = Mat::zeros(3, 1, CV_32F);
     right = Mat::zeros(3, 1, CV_32F);
     center = Mat::zeros(3, 1, CV_32F);
-    for (int i = 0; i < 5; i++) {
+    for (int i = 0; i < 8; i++) {
         line_.emplace_back(Mat::zeros(3, 1, CV_32F));
     }
   /* Lateral Control coefficient */
@@ -77,7 +77,7 @@ void LaneKeeping::LoadParams(void)
   this->get_parameter_or("LaneKeeping/lp",lp_, 609.3f);  
   this->get_parameter_or("LaneKeeping/steer_angle",SteerAngle_, 0.0f);
   this->get_parameter_or("LaneKeeping/trust_height",trust_height_, 0.6667f);  
-  float value_k1 = 1.26f;
+  float value_k1 = 1.23f;
   float value_k3 = 1.26f; // 1.3
   K1_ = (a_[0] * pow(value_k1, 4)) + (a_[1] * pow(value_k1, 3)) + (a_[2] * pow(value_k1, 2)) + (a_[3] * value_k1) + a_[4];
   K2_ = (b_[0] * pow(value_k1, 4)) + (b_[1] * pow(value_k1, 3)) + (b_[2] * pow(value_k1, 2)) + (b_[3] * value_k1) + b_[4];
@@ -213,7 +213,7 @@ void LaneKeeping::controlSteer() {
 
     SteerAngle_ = ((-1.0f * K1_) * e_values_[1]) + ((-1.0f * K2_) * e_values_[0]);
     steer_.data = SteerAngle_;
-    std::cerr << "keepg angle:  "  << SteerAngle_ << std::endl;
+   // std::cerr << "keepg angle:  "  << SteerAngle_ << std::endl;
 //    cout << SteerAngle_  << '\n';
     return;
   } 
@@ -231,11 +231,11 @@ void LaneKeeping::controlSteer() {
     e_values_[1] = e_values_[0] - (lp_ * (l3 / l1));  //trust_e1
     e_values_[2] = (float)cspline_eq_(k)- car_position;  //e1
     SteerAngle_ = ((-1.0f * K3_) * e_values_[1]) + ((-1.0f * K4_) * e_values_[0]);
-    std::cerr << "change to right angle:  "  << SteerAngle_ << std::endl;
+    //std::cerr << "change to right angle:  "  << SteerAngle_ << std::endl;
     steer_.data = SteerAngle_;
     float temp_diff = ((lane_coef_.coef[2].a * pow(height_, 2)) + (lane_coef_.coef[2].b * height_) + lane_coef_.coef[2].c) - 320; 
-
-    if(temp_diff <= 1.0){
+    std::cerr << "current_center chagnes: "  << temp_diff << std::endl;
+    if(temp_diff <= 7.0){
     //  right_cnt++;
     //  if(right_cnt >30){
         lc_right_flag_ = false;
@@ -243,7 +243,7 @@ void LaneKeeping::controlSteer() {
         right_cnt=0;
         current_center = 4; 
     //  }
-      std::cerr << "current_center chagnes: "  << current_center << std::endl;
+      //std::cerr << "current_center chagnes: "  << current_center << std::endl;
     }
     return;
   }

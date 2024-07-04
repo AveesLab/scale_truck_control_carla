@@ -14,7 +14,7 @@ def generate_launch_description():
     # Declare the launch argument for the truck name
     declare_truck_name_arg = DeclareLaunchArgument(
         'truck_name',  # Name of the launch argument
-        default_value='truck1',  # Default value if none provided
+        default_value='truck0',  # Default value if none provided
         description='Name of the truck'
     )
 
@@ -23,7 +23,8 @@ def generate_launch_description():
     
     ros_param_file = os.path.join(config_directory,'config.yaml')                 
     lane_param_file = os.path.join(config_directory,'FV1.yaml')                 
-
+    yolo_param_file = os.path.join(config_directory,'yolo.yaml')
+    fusion_param_file = os.path.join(config_directory,'fusing.yaml')  
     # Node #
     lane_detection_node=Node(
             package='ultra_fast_lane_detection',
@@ -49,6 +50,13 @@ def generate_launch_description():
             'stdout': 'screen',
             'stderr': 'screen',
             })
+    cluster_node = Node(
+            package="euclidean_cluster",
+            namespace="truck1",
+            executable="euclidean_cluster_node",
+            name="euclidean_cluster_node",
+            output='screen'
+    )
 
     speed_control_node=Node(
             package='speed_control', 
@@ -71,16 +79,52 @@ def generate_launch_description():
             executable='planner_node', 
             output='screen',
             parameters=[{'truck_name': LaunchConfiguration('truck_name')}])
+    tracking_node=Node(
+            package='object_tracking_ros2',
+            namespace='truck1',
+            name='tracking',
+            executable='object_tracking_ros2',
+            output='screen'
+    )
 
+    yolo_node=Node(
+            package='yolo_object_detection_ros2',
+            namespace='truck1',
+            name='yolo',
+            executable='yolo_object_detection_ros2',
+            output='screen',
+            parameters = [yolo_param_file]
+    )
+
+    fusion_node=Node(
+            package='sensor_fusing_ros2',
+            namespace='truck1',
+            name='fusion',
+            executable='sensor_fusing_ros2',
+            output='screen',
+    )
+
+    test_fusion_node=Node(
+            package='test_fusion_node',
+            namespace='truck1',
+            name='fusion2',
+            executable='test_fusion_node',
+            output='screen',
+    )
 
     ld = LaunchDescription([
         declare_truck_name_arg,  # Add the launch argument action
         lane_detection_node,
         lane_keeping_node,
         object_node,
+        cluster_node,
         speed_control_node,
         v2v_node,
         plan_node,
+        tracking_node,
+        yolo_node,
+        test_fusion_node
+        #fusion_node
     ])
     return ld
 

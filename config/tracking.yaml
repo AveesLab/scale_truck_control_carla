@@ -1,0 +1,14 @@
+/**:
+  ros__parameters:    
+    image/width: 640
+    image/height: 480
+
+    image_view/enable_opencv: true
+    image_view/wait_key_delay: 1
+    image_view/enable_console_output: false
+
+    subscribers/BboxArray/topic: yolo_object_detection/BboxArray
+    subscribers/BboxArray/queue_size: 1
+
+    subscribers/FuinsgArray/topic: sensor_fusing/FusingArray
+    subscribers/FusingArray/queue_size: 1

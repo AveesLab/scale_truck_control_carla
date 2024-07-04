@@ -1,0 +1,28 @@
+/**:
+  ros__parameters:    
+    run_yolo: true
+    yolo_model/names_file/name: obj.names
+    names_path: /home/nvidia/avees_ws/src/scale_truck_control_carla/detection/yolo_object_detection/yolo_network_config/names
+    yolo_model/cfg_file/name: yolov4-custom.cfg
+    cfg_path:  /home/nvidia/avees_ws/src/scale_truck_control_carla/detection/yolo_object_detection/yolo_network_config/cfg
+    yolo_model/weights_file/name: yolov4-custom_best.weights
+    weights_path:  /home/nvidia/avees_ws/src/scale_truck_control_carla/detection/yolo_object_detection/yolo_network_config/weights
+
+    image/width: 640
+    image/height: 480
+
+    image_view/enable_opencv: true
+    image_view/wait_key_delay: 1
+    image_view/enable_console_output: false
+
+    subscribers/front_camera_reading/topic: front_camera
+    subscribers/front_camera_reading/queue_size: 1
+    subscribers/rear_camera_reading/topic: rear_cam/image_raw
+    subscribers/rear_camera_reading/queue_size: 1
+    subscribers/run_yolo_/topic: run_yolo_flag
+    subscribers/run_yolo_/queue_size: 1
+
+    publishers/BboxArray/topic: yolo_object_detection/BboxArray
+    publishers/BboxArray/queue_size: 10
+    
+

@@ -465,7 +465,7 @@ void LaneDetector::clear_release() {
 void LaneDetector::get_lane_coef() {
   Mat l_fit(left_coef_), r_fit(right_coef_), c_fit(center_coef_), er_fit(extra_right_coef_), ec_fit(extra_center_coef_);
 
-  lane_coef_.coef.resize(5);
+  lane_coef_.coef.resize(8);
   if (!l_fit.empty() && !r_fit.empty()) {
     lane_coef_.coef[0].a = l_fit.at<float>(2, 0);
     lane_coef_.coef[0].b = l_fit.at<float>(1, 0);
@@ -487,6 +487,20 @@ void LaneDetector::get_lane_coef() {
     lane_coef_.coef[4].a = ec_fit.at<float>(2, 0);
     lane_coef_.coef[4].b = ec_fit.at<float>(1, 0);
     lane_coef_.coef[4].c = ec_fit.at<float>(0, 0);
+
+
+    //original_coef
+    lane_coef_.coef[5].a = orig_left_coef_.at<float>(2, 0);
+    lane_coef_.coef[5].b = orig_left_coef_.at<float>(1, 0);
+    lane_coef_.coef[5].c = orig_left_coef_.at<float>(0, 0);
+
+    lane_coef_.coef[6].a = orig_right_coef_.at<float>(2, 0);
+    lane_coef_.coef[6].b = orig_right_coef_.at<float>(1, 0);
+    lane_coef_.coef[6].c = orig_right_coef_.at<float>(0, 0);
+
+    lane_coef_.coef[7].a = orig_extra_right_coef_.at<float>(2, 0);
+    lane_coef_.coef[7].b = orig_extra_right_coef_.at<float>(1, 0);
+    lane_coef_.coef[7].c = orig_extra_right_coef_.at<float>(0, 0);
   }
 }
 
@@ -627,6 +641,12 @@ float LaneDetector::display_img(Mat _frame, int _delay, bool _view) {
     vector<int> right_point_f_x; // X BEV right lane points to get polyfit
     vector<int> extra_right_point_f_x;
     vector<int> extra_right_point_f_y;
+    vector<int> orig_left_point_f_y;
+    vector<int> orig_left_point_f_x;
+    vector<int> orig_right_point_f_y;
+    vector<int> orig_right_point_f_x;
+    vector<int> orig_extra_right_point_f_y;
+    vector<int> orig_extra_right_point_f_x;
 
     for (int i =0 ; i < warp_left_point_f.size(); i++) {
         if (warp_left_point_f[i].y < distance_ && option_) break; // Dynamic ROI
@@ -657,12 +677,28 @@ float LaneDetector::display_img(Mat _frame, int _delay, bool _view) {
         extra_right_point_f_y.push_back(warp_extra_right_point_f[i].y);
         extra_right_point_f_x.push_back(warp_extra_right_point_f[i].x);
     }
+    for (int i =0 ; i < left_point_f.size() ; i++) {
+        orig_left_point_f_y.push_back(left_point_f[i].y);
+        orig_left_point_f_x.push_back(left_point_f[i].x);
+    }
+    for (int i =0 ; i < right_point_f.size() ; i++) {
+        orig_right_point_f_y.push_back(right_point_f[i].y);
+        orig_right_point_f_x.push_back(right_point_f[i].x);
+    }
+    for (int i =0 ; i < extra_right_point_f.size() ; i++) {
+        orig_extra_right_point_f_y.push_back(extra_right_point_f[i].y);
+        orig_extra_right_point_f_x.push_back(extra_right_point_f[i].x);
+    }
+
 
 
     // To get center polyfit
     left_coef_ = polyfit(left_point_f_y, left_point_f_x);
     right_coef_ = polyfit(right_point_f_y, right_point_f_x);
     extra_right_coef_ = polyfit(extra_right_point_f_y, extra_right_point_f_x);
+    orig_left_coef_ = polyfit(orig_left_point_f_y, orig_left_point_f_x);
+    orig_right_coef_ = polyfit(orig_right_point_f_y, orig_right_point_f_x);
+    orig_extra_right_coef_ = polyfit(orig_extra_right_point_f_y, orig_extra_right_point_f_x);
     center_coef_ = (left_coef_ + right_coef_)/2;    
     extra_center_coef_ = (right_coef_ + extra_right_coef_)/2;
     get_lane_coef();

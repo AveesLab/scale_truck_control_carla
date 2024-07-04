@@ -84,6 +84,9 @@ public:
   Mat center_coef_;
   Mat extra_right_coef_;
   Mat extra_center_coef_;
+  Mat orig_left_coef_;
+  Mat orig_right_coef_;
+  Mat orig_extra_right_coef_;
 private:
   void LoadParams(void);
   void doInference(IExecutionContext& context, float* input, float* output, int batchSize);

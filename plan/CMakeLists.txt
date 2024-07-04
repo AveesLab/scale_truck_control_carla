@@ -11,6 +11,8 @@ find_package(ament_index_cpp REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(ros2_msg REQUIRED)
+find_package(OpenCV REQUIRED)
+find_package(cv_bridge REQUIRED)
 
 set(PROJECT_SOURCES
   src/main.cpp
@@ -24,6 +26,7 @@ set(PROJECT_SOURCES_DEPENDENCIES
   std_msgs
   ament_index_cpp
   ros2_msg
+  cv_bridge
 )
 
 include_directories(

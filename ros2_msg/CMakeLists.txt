@@ -24,9 +24,14 @@ set(msg_files
   "msg/Xav2lane.msg"
   "msg/Cmd2xav.msg"
   "msg/Xav2cmd.msg"
-  "msg/Boundingbox.msg"
+  "msg/Bbox.msg"
   "msg/Yoloflag.msg"
   "msg/Target.msg"
+  "msg/BboxArray.msg"
+  "msg/Fusing.msg"
+  "msg/FusingArray.msg"
+  "msg/Tracking.msg"
+  "msg/TrackingArray.msg"
 )
 
 rosidl_generate_interfaces(${PROJECT_NAME}
