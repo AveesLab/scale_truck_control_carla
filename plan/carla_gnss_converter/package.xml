@@ -1,0 +1,19 @@
+<package format="2">
+  <name>carla_gnss_converter</name>
+  <version>0.0.0</version>
+  <description>GNSS to XYZ converter for Carla</description>
+  <maintainer email="your_email@todo.todo">your_name</maintainer>
+  <license>TODO</license>
+
+  <depend>rclcpp</depend>
+  <depend>sensor_msgs</depend>
+  <depend>std_msgs</depend>
+  <depend>geometry_msgs</depend>
+  <depend>message_filters</depend>
+  <test_depend>ament_lint_auto</test_depend>
+  <test_depend>ament_lint_common</test_depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>

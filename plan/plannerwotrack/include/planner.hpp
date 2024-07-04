@@ -16,6 +16,7 @@
 #include <random>
 #include <condition_variable>
 #include "sensor_msgs/msg/image.hpp"
+#include <sensor_msgs/msg/point_cloud2.hpp>
 #include "std_msgs/msg/header.hpp"
 #include <cv_bridge/cv_bridge.h>
 #include <opencv2/opencv.hpp>
@@ -26,9 +27,12 @@
 #include "ros2_msg/msg/obj2xav.hpp"
 #include "ros2_msg/msg/target.hpp"
 #include "std_msgs/msg/float32.hpp"
+#include "std_msgs/msg/int32.hpp"
 #include "std_msgs/msg/bool.hpp"
 #include "ros2_msg/msg/fusing_array.hpp"
 #include "ros2_msg/msg/tracking_array.hpp"
+#include "ros2_msg/msg/v2_xcam.hpp"
+#include "ros2_msg/msg/v2_xcustom.hpp"
 
 
 typedef struct object_info {
@@ -77,24 +81,40 @@ private:
     float myGapControlGainGap = 0.45f;
     float myGapControlGainGapDot = 0.35f;
     float current_velocity = 0.0f;
+    bool cut_in_flag = false;
+    int ulane_change = 0;
+    bool emergency_flag_from = false;
+    bool caution1mode = false;
+    bool right_obstacle = false;
+    bool left_obstacle = false;
+    bool received_ = false;
     rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr DistanceSubscriber_;
     rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr VelocitySubscriber_;
     rclcpp::Subscription<ros2_msg::msg::Target>::SharedPtr TargetSubscriber_;
     rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr EmergencyPublisher_;
-    rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr DistancePublisher_;
+    rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr CutinFlagPublisher_;
+    rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr caution1Publisher_;
+    rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr lcPublisher_;
     rclcpp::TimerBase::SharedPtr timer_;
     rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr TargetVelocityPublisher_;
-    rclcpp::Subscription<ros2_msg::msg::TrackingArray>::SharedPtr DetectedObjectsSubscriber_;
+    rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr DistancePublisher_;
+    rclcpp::Subscription<ros2_msg::msg::FusingArray>::SharedPtr DetectedObjectsSubscriber_;
     rclcpp::Subscription<ros2_msg::msg::Lane2xav>::SharedPtr LaneSubscriber_;
+    rclcpp::Subscription<std_msgs::msg::Int32>::SharedPtr uLaneSubscriber_;
+    rclcpp::Subscription<ros2_msg::msg::V2XCAM>::SharedPtr V2xcamSubscriber_;
+    rclcpp::Subscription<ros2_msg::msg::V2XCUSTOM>::SharedPtr V2xcustomSubscriber_;
+    rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr LeftObjectSubscriber_;
+    rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr RightObjectSubscriber_;
     void timerCallback();
     float calculate_target_velocity();
     void send_full_brake();
     bool check_collision();
     void DistanceSubCallback(const std_msgs::msg::Float32::SharedPtr msg);
     void TargetSubCallback(const ros2_msg::msg::Target::SharedPtr msg);
-    void DetectedObjectsSubcallback(const ros2_msg::msg::TrackingArray::SharedPtr msg);
+    void DetectedObjectsSubcallback(const ros2_msg::msg::FusingArray::SharedPtr msg);
     void velocity_callback(const std_msgs::msg::Float32::SharedPtr msg);
     void LaneSubcallback(const ros2_msg::msg::Lane2xav::SharedPtr msg);
+    void uLaneSubcallback(const std_msgs::msg::Int32::SharedPtr msg);
     void calculate_cacc_param();
     float calculate_target_velocity_cacc();
     void check_objects_ego_lane();
@@ -103,7 +123,14 @@ private:
     bool isInEgoLane(const BoundingBox& box, double a, double b, double c, double ar, double br, double cr);
     float calculate_target_velocity_acc();
     void calculate_acc_param();
-    bool check_collision_by_ttc();
+    float check_ttc();
+    void check_ego_lane_num();
+    void lane_change_flag(int num);
+    void CAMSubcallback(const ros2_msg::msg::V2XCAM::SharedPtr msg);
+    void CUSTOMSubcallback(const ros2_msg::msg::V2XCUSTOM::SharedPtr msg);
+    bool check_side(int num);
+    void LeftObjectSubcallback(const sensor_msgs::msg::PointCloud2::SharedPtr msg); 
+    void RightObjectSubcallback(const sensor_msgs::msg::PointCloud2::SharedPtr msg);
 };
 
 }

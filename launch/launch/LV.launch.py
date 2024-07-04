@@ -22,7 +22,7 @@ def generate_launch_description():
     config_directory = os.path.join(base_directory, '../../', 'config') 
     
     ros_param_file = os.path.join(config_directory,'config.yaml')                 
-    lane_param_file = os.path.join(config_directory,'LV.yaml')                 
+    lane_param_file = os.path.join(config_directory,'FV1.yaml')                 
     yolo_param_file = os.path.join(config_directory,'yolo.yaml')
     fusion_param_file = os.path.join(config_directory,'fusing.yaml')  
     # Node #
@@ -42,6 +42,15 @@ def generate_launch_description():
             output='screen',
             parameters = [lane_param_file])
             
+    predict_lc_node=Node(
+            package="carla_gnss_converter",
+            namespace='truck0',
+            executable="gnss_converter",
+            output={
+            'stdout': 'screen',
+            'stderr': 'screen',
+            })
+
     object_node=Node(
             package="obstacle_detection",
             namespace='truck0',
@@ -50,11 +59,31 @@ def generate_launch_description():
             'stdout': 'screen',
             'stderr': 'screen',
             })
-    cluster_node = Node(
+
+    cluster_node1 = Node(
             package="euclidean_cluster",
             namespace="truck0",
             executable="euclidean_cluster_node",
             name="euclidean_cluster_node",
+            parameters = [ {'sub_topic_name': 'front_radar'}],
+            output='screen'
+    )
+
+    cluster_node2 = Node(
+            package="euclidean_cluster",
+            namespace="truck0",
+            executable="euclidean_cluster_node",
+            name="euclidean_cluster_node_right",
+            parameters = [ {"sub_topic_name": 'right_radar'} , {"pub_topic_name": 'right_clustered_radar_points'}],
+            output='screen'
+    )
+
+    cluster_node3 = Node(
+            package="euclidean_cluster",
+            namespace="truck0",
+            executable="euclidean_cluster_node",
+            name="euclidean_cluster_node_left",
+            parameters = [ {"sub_topic_name": 'left_radar'} , {"pub_topic_name": 'left_clustered_radar_points'}],
             output='screen'
     )
 
@@ -77,6 +106,13 @@ def generate_launch_description():
             namespace='truck0', 
             name='planner', 
             executable='planner_node', 
+            output='screen',
+            parameters=[{'truck_name': LaunchConfiguration('truck_name')}])
+    plan_node_wo=Node(
+            package='plannerwo', 
+            namespace='truck0', 
+            name='plannerwo', 
+            executable='planner_node_wo', 
             output='screen',
             parameters=[{'truck_name': LaunchConfiguration('truck_name')}])
     tracking_node=Node(
@@ -103,13 +139,7 @@ def generate_launch_description():
             executable='sensor_fusing_ros2',
             output='screen',
     )
-    
-    interface_node=Node(
-            package='interface', 
-            namespace='truck0', 
-            name='interface', 
-            executable='interface_node', 
-            output='screen')
+
     test_fusion_node=Node(
             package='test_fusion_node',
             namespace='truck0',
@@ -123,18 +153,18 @@ def generate_launch_description():
         lane_detection_node,
         lane_keeping_node,
         #object_node,
-        cluster_node,
+        cluster_node1,
+        #cluster_node2,
+        #cluster_node3,
         speed_control_node,
         v2v_node,
-        plan_node,
-        tracking_node,
+        plan_node_wo,
+        #tracking_node,
         yolo_node,
         test_fusion_node,
-        interface_node
+        predict_lc_node
         #fusion_node
     ])
     return ld
-
-
 
 

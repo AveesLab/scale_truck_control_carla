@@ -105,16 +105,6 @@ void test_fusion_node::callback(const ros2_msg::msg::BboxArray::ConstSharedPtr b
             fusingbox.velocity = velocity;
             fusingboxes.fusingarr.push_back(fusingbox);
         }
-        else {
-            fusingbox.x = bbox.x;
-            fusingbox.y = bbox.y;
-            fusingbox.w = bbox.w;
-            fusingbox.h = bbox.h;
-            fusingbox.class_id = bbox.class_id;
-            fusingbox.distance = 999;
-            fusingbox.velocity = 999;
-            fusingboxes.fusingarr.push_back(fusingbox);
-        }
     } 
     FusingPublisher_->publish(fusingboxes);
 }

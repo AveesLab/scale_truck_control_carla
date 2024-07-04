@@ -14,7 +14,7 @@ def generate_launch_description():
     # Declare the launch argument for the truck name
     declare_truck_name_arg = DeclareLaunchArgument(
         'truck_name',  # Name of the launch argument
-        default_value='truck0',  # Default value if none provided
+        default_value='truck1',  # Default value if none provided
         description='Name of the truck'
     )
 
@@ -42,6 +42,15 @@ def generate_launch_description():
             output='screen',
             parameters = [lane_param_file])
             
+    predict_lc_node=Node(
+            package="carla_gnss_converter",
+            namespace='truck1',
+            executable="gnss_converter",
+            output={
+            'stdout': 'screen',
+            'stderr': 'screen',
+            })
+
     object_node=Node(
             package="obstacle_detection",
             namespace='truck1',
@@ -50,11 +59,31 @@ def generate_launch_description():
             'stdout': 'screen',
             'stderr': 'screen',
             })
-    cluster_node = Node(
+
+    cluster_node1 = Node(
             package="euclidean_cluster",
             namespace="truck1",
             executable="euclidean_cluster_node",
             name="euclidean_cluster_node",
+            parameters = [ {'sub_topic_name': 'front_radar'}],
+            output='screen'
+    )
+
+    cluster_node2 = Node(
+            package="euclidean_cluster",
+            namespace="truck1",
+            executable="euclidean_cluster_node",
+            name="euclidean_cluster_node_right",
+            parameters = [ {"sub_topic_name": 'right_radar'} , {"pub_topic_name": 'right_clustered_radar_points'}],
+            output='screen'
+    )
+
+    cluster_node3 = Node(
+            package="euclidean_cluster",
+            namespace="truck1",
+            executable="euclidean_cluster_node",
+            name="euclidean_cluster_node_left",
+            parameters = [ {"sub_topic_name": 'left_radar'} , {"pub_topic_name": 'left_clustered_radar_points'}],
             output='screen'
     )
 
@@ -77,6 +106,13 @@ def generate_launch_description():
             namespace='truck1', 
             name='planner', 
             executable='planner_node', 
+            output='screen',
+            parameters=[{'truck_name': LaunchConfiguration('truck_name')}])
+    plan_node_wo=Node(
+            package='plannerwo', 
+            namespace='truck1', 
+            name='plannerwo', 
+            executable='planner_node_wo', 
             output='screen',
             parameters=[{'truck_name': LaunchConfiguration('truck_name')}])
     tracking_node=Node(
@@ -116,14 +152,17 @@ def generate_launch_description():
         declare_truck_name_arg,  # Add the launch argument action
         lane_detection_node,
         lane_keeping_node,
-        object_node,
-        cluster_node,
+        #object_node,
+        cluster_node1,
+        #cluster_node2,
+        #cluster_node3,
         speed_control_node,
         v2v_node,
-        plan_node,
-        tracking_node,
+        plan_node_wo,
+        #tracking_node,
         yolo_node,
-        test_fusion_node
+        test_fusion_node,
+        predict_lc_node
         #fusion_node
     ])
     return ld

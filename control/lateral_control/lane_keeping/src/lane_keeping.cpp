@@ -32,7 +32,7 @@ LaneKeeping::LaneKeeping()
   qos.best_effort();
   XavSubscriber_ = this->create_subscription<ros2_msg::msg::Xav2lane>(XavSubTopicName, XavSubQueueSize, std::bind(&LaneKeeping::XavSubCallback, this, std::placeholders::_1));
   LaneSubscriber_ = this->create_subscription<ros2_msg::msg::Lane2xav>(LaneTopicName, LaneQueueSize, std::bind(&LaneKeeping::LaneSubCallback, this, std::placeholders::_1));
-  LaneChangeSubscriber_ = this->create_subscription<std_msgs::msg::Bool>("lane_change_flag", 10, std::bind(&LaneKeeping::LaneChangeSubCallback, this, std::placeholders::_1));
+  LaneChangeSubscriber_ = this->create_subscription<std_msgs::msg::Int32>("lane_change", 1, std::bind(&LaneKeeping::LaneChangeSubCallback, this, std::placeholders::_1));
   /***********************/
   /* Ros Topic Publisher */
   /***********************/
@@ -77,8 +77,8 @@ void LaneKeeping::LoadParams(void)
   this->get_parameter_or("LaneKeeping/lp",lp_, 609.3f);  
   this->get_parameter_or("LaneKeeping/steer_angle",SteerAngle_, 0.0f);
   this->get_parameter_or("LaneKeeping/trust_height",trust_height_, 0.6667f);  
-  float value_k1 = 1.23f;
-  float value_k3 = 1.26f; // 1.3
+  float value_k1 = 1.2f;
+  float value_k3 = 1.32f; // 1.3
   K1_ = (a_[0] * pow(value_k1, 4)) + (a_[1] * pow(value_k1, 3)) + (a_[2] * pow(value_k1, 2)) + (a_[3] * value_k1) + a_[4];
   K2_ = (b_[0] * pow(value_k1, 4)) + (b_[1] * pow(value_k1, 3)) + (b_[2] * pow(value_k1, 2)) + (b_[3] * value_k1) + b_[4];
   K3_ = (a_[0] * pow(value_k3, 4)) + (a_[1] * pow(value_k3, 3)) + (a_[2] * pow(value_k3, 2)) + (a_[3] * value_k3) + a_[4];
@@ -115,22 +115,29 @@ void LaneKeeping::LaneSubCallback(const ros2_msg::msg::Lane2xav::SharedPtr msg)
   line_[4].at<float>(1,0) = poly_coef_.coef[4].b;
   line_[4].at<float>(0,0) = poly_coef_.coef[4].c;
 
+  if(line_[1].at<float>(0,0) > 320.0) current_center= 2;
+  else current_center=4;
   controlSteer();
+
   SteerPublisher_->publish(steer_);
   
 }
 
-void LaneKeeping::LaneChangeSubCallback(const std_msgs::msg::Bool::SharedPtr msg) {
-  if(msg->data == true) {
-    if(current_center == 2) {
+void LaneKeeping::LaneChangeSubCallback(const std_msgs::msg::Int32::SharedPtr msg) {
+
+    if(msg->data == 2) {
+      if(current_center == 2) {
       lane_keeping = false;
       lc_right_flag_ = true;
+      }
     }
-    else if(current_center == 4) {
+    else if(msg->data == 4) {
+      if(current_center == 4) {
       lane_keeping = false;
       lc_left_flag_ = true;
+      }
     }
-  }
+  
 }
 
 tk::spline LaneKeeping::cspline(int mark_) {
@@ -151,7 +158,7 @@ tk::spline LaneKeeping::cspline(int mark_) {
     int tX3_ = (int)((line_[4].at<float>(2, 0) * pow(tY3_, 2)) + (line_[4].at<float>(1, 0) * tY3_) + line_[4].at<float>(0, 0));
     int tX4_ = (int)((line_[4].at<float>(2, 0) * pow(tY4_, 2)) + (line_[4].at<float>(1, 0) * tY4_) + line_[4].at<float>(0, 0));
     X = {(double)tX3_, (double)tX4_, (double)(640/2)};
-    Y = {(double)tY3_-260.0, (double)tY4_-293.0, (double)480}; 
+    Y = {(double)tY3_-290.0, (double)tY4_-333.0, (double)480}; 
 
     tk::spline s(Y, X, tk::spline::cspline); 
     cspline_eq = s;
@@ -199,7 +206,7 @@ void LaneKeeping::controlSteer() {
   float j = 480.0 * trust_height_;
   float k = 480.0 * e1_height_;
 
-
+  std::cerr << "current_center  "  << current_center << std::endl;
   if (!left.empty() && !right.empty() && lane_keeping) {
     lane_coef_.coef[2].a = line_[current_center].at<float>(2, 0);
     lane_coef_.coef[2].b = line_[current_center].at<float>(1, 0);
@@ -234,21 +241,19 @@ void LaneKeeping::controlSteer() {
     //std::cerr << "change to right angle:  "  << SteerAngle_ << std::endl;
     steer_.data = SteerAngle_;
     float temp_diff = ((lane_coef_.coef[2].a * pow(height_, 2)) + (lane_coef_.coef[2].b * height_) + lane_coef_.coef[2].c) - 320; 
-    std::cerr << "current_center chagnes: "  << temp_diff << std::endl;
+     std::cerr << "current_center changes: "  << temp_diff << std::endl;
     if(temp_diff <= 7.0){
-    //  right_cnt++;
-    //  if(right_cnt >30){
+      //right_cnt++;
+      //if(right_cnt >20){
         lc_right_flag_ = false;
         lane_keeping = true;
         right_cnt=0;
         current_center = 4; 
-    //  }
-      //std::cerr << "current_center chagnes: "  << current_center << std::endl;
+      //}
     }
     return;
   }
-  
-  if ((!line_[2].empty()) && lc_left_flag_ ) {
+  else if ((!line_[2].empty()) && lc_left_flag_ ) {
     lane_coef_.coef[2].a = line_[2].at<float>(2, 0);
     lane_coef_.coef[2].b = line_[2].at<float>(1, 0);
     lane_coef_.coef[2].c = line_[2].at<float>(0, 0);
@@ -271,8 +276,26 @@ void LaneKeeping::controlSteer() {
         lane_keeping = true;
         left_cnt=0;
         current_center = 2; 
+        std::cerr << "current_center left changes: "  << temp_diff << std::endl;
     //  }
     }
+    return;
+  }
+  else {
+    lane_coef_.coef[2].a = line_[current_center].at<float>(2, 0);
+    lane_coef_.coef[2].b = line_[current_center].at<float>(1, 0);
+    lane_coef_.coef[2].c = line_[current_center].at<float>(0, 0);
+
+    l1 =  j - i;
+    l2 = ((lane_coef_.coef[2].a * pow(i, 2)) + (lane_coef_.coef[2].b * i) + lane_coef_.coef[2].c) - ((lane_coef_.coef[2].a * pow(j, 2)) + (lane_coef_.coef[2].b * j) + lane_coef_.coef[2].c);
+
+    e_values_[0] = ((lane_coef_.coef[2].a * pow(i, 2)) + (lane_coef_.coef[2].b * i) + lane_coef_.coef[2].c) - car_position;  //eL
+    e_values_[1] = e_values_[0] - (lp_ * (l2 / l1));  //e1
+
+    SteerAngle_ = ((-1.0f * K1_) * e_values_[1]) + ((-1.0f * K2_) * e_values_[0]);
+    steer_.data = SteerAngle_;
+   // std::cerr << "keepg angle:  "  << SteerAngle_ << std::endl;
+//    cout << SteerAngle_  << '\n';
     return;
   }
  }

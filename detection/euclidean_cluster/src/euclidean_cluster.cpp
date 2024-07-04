@@ -1,11 +1,18 @@
 #include "euclidean_cluster.hpp"
 
-euclidean_cluster_node::euclidean_cluster_node() : Node("radar_clustering_node") {
+euclidean_cluster_node::euclidean_cluster_node() : Node("radar_clustering_node", rclcpp::NodeOptions()
+                              .allow_undeclared_parameters(true)
+                              .automatically_declare_parameters_from_overrides(true)) {
+
     rclcpp::QoS qos(rclcpp::QoSInitialization::from_rmw(rmw_qos_profile_sensor_data));
     qos.best_effort();
+    this->get_parameter_or("sub_topic_name", RadarSubTopicName, std::string("front_radar")); // radar
+    this->get_parameter_or("pub_topic_name", RadarPubTopicName, std::string("clustered_radar_points")); // radar
+
+
     subscription_ = this->create_subscription<sensor_msgs::msg::PointCloud2>(
-        "front_radar", qos, std::bind(&euclidean_cluster_node::pointCloudCallback, this, std::placeholders::_1));
-    publisher_ = this->create_publisher<sensor_msgs::msg::PointCloud2>("clustered_radar_points", 10);
+       RadarSubTopicName, qos, std::bind(&euclidean_cluster_node::pointCloudCallback, this, std::placeholders::_1));
+    publisher_ = this->create_publisher<sensor_msgs::msg::PointCloud2>(RadarPubTopicName, 10);
 }
 
 euclidean_cluster_node::~euclidean_cluster_node() {}
@@ -26,7 +33,7 @@ void euclidean_cluster_node::performClustering(const pcl::PointCloud<PointXYZIV>
 
     pcl::EuclideanClusterExtraction<PointXYZIV> ec;
     ec.setClusterTolerance(0.5);
-    ec.setMinClusterSize(3);
+    ec.setMinClusterSize(10);
     ec.setMaxClusterSize(25000);
     ec.setSearchMethod(tree);
     ec.setInputCloud(cloud);

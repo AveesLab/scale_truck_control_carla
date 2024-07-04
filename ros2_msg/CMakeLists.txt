@@ -32,6 +32,10 @@ set(msg_files
   "msg/FusingArray.msg"
   "msg/Tracking.msg"
   "msg/TrackingArray.msg"
+  "msg/GNSS.msg"
+  "msg/IMU.msg"
+  "msg/V2XCAM.msg"
+  "msg/V2XCUSTOM.msg"
 )
 
 rosidl_generate_interfaces(${PROJECT_NAME}

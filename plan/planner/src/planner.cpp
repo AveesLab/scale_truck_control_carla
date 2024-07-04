@@ -20,7 +20,6 @@ Planner::Planner()
     VelocitySubscriber_ = this->create_subscription<std_msgs::msg::Float32>("velocity",1,std::bind(&Planner::velocity_callback, this, std::placeholders::_1));
     timer_ = this->create_wall_timer(10ms, std::bind(&Planner::timerCallback, this));
     TargetVelocityPublisher_ = this->create_publisher<std_msgs::msg::Float32>("target_velocity", 10);
-    DistancePublisher_ = this->create_publisher<std_msgs::msg::Float32>("min_distance", 10);
     DetectedObjectsSubscriber_ = this->create_subscription<ros2_msg::msg::TrackingArray>("object_tracking/TrackingArray",1,std::bind(&Planner::DetectedObjectsSubcallback, this, std::placeholders::_1));
     LaneSubscriber_ = this->create_subscription<ros2_msg::msg::Lane2xav>("lane2xav_msg",1,std::bind(&Planner::LaneSubcallback, this, std::placeholders::_1));
 }
@@ -100,10 +99,10 @@ bool Planner::check_collision_by_ttc() {
     if (relative_speed_mps <= 0) {
         return false;
     }
-    
+    if(preceing_car.distance >= 990 ) return false;
     float ttc = preceing_car.distance / relative_speed_mps;
-    if(ttc <= 2.0){
-	std::cerr << "will be collision with  "<< preceing_car.class_id << " , ttc = " << ttc << std::endl;
+    if(ttc <= 1.5){
+	std::cerr << "will be collision with  "<< preceing_car.class_id << " , ttc = " << preceing_car.distance  << " " << relative_speed_mps<< std::endl;
         return true;
     }
     else {
@@ -149,7 +148,7 @@ void Planner::calculate_cacc_param() {
 void Planner::calculate_acc_param() {
     if(detected_objects_on_ego_lane.size() != 0) this->current_distance = detected_objects_on_ego_lane.front().distance;
     else this->current_distance = 0;
-    des_spacing = 1.4f *  this->current_velocity;
+    des_spacing = 1.1f *  this->current_velocity;
     spacing_err = this->current_distance - des_spacing;
     speed_err = detected_objects_on_ego_lane.front().velocity;
 }
@@ -225,7 +224,7 @@ void Planner::timerCallback() {
         std::cerr << "register" << std::endl;
         register_trailer_to_follow();
     }
-    if( ( this->emergency_flag  )|| (this->emergency_brake)) {
+    if( ( this->emergency_flag  )|| (!lv && this->emergency_brake)) {
         std::cerr << "emergency!!!!!!!!!!!11 " << std::endl;
 	    send_full_brake();
         return;
@@ -250,7 +249,7 @@ void Planner::timerCallback() {
     }
    
     //std::cerr << detected_objects_on_ego_lane.size()  << std::endl;
-    if(lv ) {//|| detected_objects_on_ego_lane.size() == 0 || detected_objects_on_ego_lane.front().id != preceding_truck_id) {
+    if(lv || detected_objects_on_ego_lane.size() == 0 || detected_objects_on_ego_lane.front().id != preceding_truck_id) {
         std::cerr << "calculate_target_velocity_acc" << std::endl;
         std_msgs::msg::Float32 msg;
         if(detected_objects_on_ego_lane.size() != 0) {
@@ -258,7 +257,7 @@ void Planner::timerCallback() {
             msg.data = calculate_target_velocity_acc();
         }
         else {
-            msg.data = this->target_velocity;
+            msg.data = 90.0;
         }
         TargetVelocityPublisher_->publish(msg);
     } // ACC mode
@@ -269,9 +268,6 @@ void Planner::timerCallback() {
         msg.data = calculate_target_velocity_cacc();
         TargetVelocityPublisher_->publish(msg);
         }//CACC mode
-        std_msgs::msg::Float32 msg2;
-        msg2.data = this->current_distance;
-        DistancePublisher_->publish(msg2);
     } 
 
 } 

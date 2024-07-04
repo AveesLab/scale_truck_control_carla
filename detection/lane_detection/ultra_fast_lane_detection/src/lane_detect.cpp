@@ -631,10 +631,10 @@ float LaneDetector::display_img(Mat _frame, int _delay, bool _view) {
             }
         }
     }
-    if (left_point_f.size() != 0 && right_point_f.size() != 0 && extra_right_point_f.size() != 0) { 
-    perspectiveTransform(left_point_f , warp_left_point_f, trans); // Transform left lane points to BEV left lane points
-    perspectiveTransform(right_point_f , warp_right_point_f, trans); // Transform right lane points to BEV right lane points
-    perspectiveTransform(extra_right_point_f , warp_extra_right_point_f, trans); // Transform right lane points to BEV right lane points
+    //if (left_point_f.size() != 0 && right_point_f.size() != 0 && extra_right_point_f.size() != 0) { 
+    if(left_point_f.size() != 0) perspectiveTransform(left_point_f , warp_left_point_f, trans); // Transform left lane points to BEV left lane points
+    if(right_point_f.size() != 0) perspectiveTransform(right_point_f , warp_right_point_f, trans); // Transform right lane points to BEV right lane points
+    if(extra_right_point_f.size() != 0)perspectiveTransform(extra_right_point_f , warp_extra_right_point_f, trans); // Transform right lane points to BEV right lane points
     vector<int> left_point_f_y; // Y BEV left lane points to get polyfit
     vector<int> left_point_f_x; // X BEV left lane points to get polyfit
     vector<int> right_point_f_y; // Y BEV right lane points to get polyfit
@@ -768,9 +768,9 @@ float LaneDetector::display_img(Mat _frame, int _delay, bool _view) {
             polylines(warped_frame, &extra_right_points_point_, &extra_right_points_number_, 1, false, Scalar(255, 100, 100), 10);
 
             //To draw lane in Original image
-            perspectiveTransform(warp_left_point2f , reverse_left_point2f, reverse_trans);
-            perspectiveTransform(warp_right_point2f , reverse_right_point2f, reverse_trans);
-            perspectiveTransform(warp_extra_right_point2f , reverse_extra_right_point2f, reverse_trans);
+            if(left_point_f.size() != 0) perspectiveTransform(warp_left_point2f , reverse_left_point2f, reverse_trans);
+            if(right_point_f.size() != 0) perspectiveTransform(warp_right_point2f , reverse_right_point2f, reverse_trans);
+            if(extra_right_point_f.size() != 0) perspectiveTransform(warp_extra_right_point2f , reverse_extra_right_point2f, reverse_trans);
             
             std::vector<Point> leftInt, rightInt, extrarightInt;
             for(const auto& p:reverse_left_point2f) leftInt.push_back(Point(static_cast<int>(p.x), static_cast<int>(p.y)));
@@ -822,7 +822,7 @@ float LaneDetector::display_img(Mat _frame, int _delay, bool _view) {
     waitKey(_delay);
   }
   clear_release();
-    }
+    
 }
 
 } /* namespace lane_detect */

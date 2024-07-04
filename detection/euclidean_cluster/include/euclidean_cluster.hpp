@@ -46,6 +46,8 @@ public:
 
 private:
 
+    std::string RadarPubTopicName;
+    std::string RadarSubTopicName;
     rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr subscription_;
     rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr publisher_;
 

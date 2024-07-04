@@ -120,7 +120,7 @@ void YoloObjectDetectionNode::init() {
 
   objectNames_ = objectNames(names_); // 미리 해두는건 어떤지?
 
-  yoloDetector_ = new Detector(cfg_, weights_, 0.8f/* thresh*/);
+  yoloDetector_ = new Detector(cfg_, weights_, 0.95f/* thresh*/);
   yoloDetector_->detect(img_for_init);
 
   detectThread_ = std::thread(&YoloObjectDetectionNode::detectInThread, this);
@@ -203,9 +203,9 @@ void YoloObjectDetectionNode::detectInThread()
        std::scoped_lock lock(front_cam_mutex_);
       // cv::Mat mat1(height_, width_, CV_8UC3, cv::Scalar(255, 255, 255));
       objects_ = yoloDetector_->detect(frontCamImageCopy_);
-    //  processing_objects = removeDuplication(objects_);
+      //processing_objects = removeDuplication(objects_);
       // objects_ = yoloDetector_->detect(mat1);
-      
+      if(objects_.size() == 0 )std::cerr  << " empty "  << std::endl;
        cv::Mat draw_img;
 
        draw_img = frontCamImageCopy_.clone();
