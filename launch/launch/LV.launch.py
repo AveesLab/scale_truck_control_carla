@@ -22,7 +22,7 @@ def generate_launch_description():
     config_directory = os.path.join(base_directory, '../../', 'config') 
     
     ros_param_file = os.path.join(config_directory,'config.yaml')                 
-    lane_param_file = os.path.join(config_directory,'FV1.yaml')                 
+    lane_param_file = os.path.join(config_directory,'LV.yaml')                 
     yolo_param_file = os.path.join(config_directory,'yolo.yaml')
     fusion_param_file = os.path.join(config_directory,'fusing.yaml')  
     # Node #
@@ -42,15 +42,6 @@ def generate_launch_description():
             output='screen',
             parameters = [lane_param_file])
             
-    predict_lc_node=Node(
-            package="carla_gnss_converter",
-            namespace='truck0',
-            executable="gnss_converter",
-            output={
-            'stdout': 'screen',
-            'stderr': 'screen',
-            })
-
     object_node=Node(
             package="obstacle_detection",
             namespace='truck0',
@@ -59,31 +50,30 @@ def generate_launch_description():
             'stdout': 'screen',
             'stderr': 'screen',
             })
-
-    cluster_node1 = Node(
+    cluster_node = Node(
             package="euclidean_cluster",
             namespace="truck0",
             executable="euclidean_cluster_node",
             name="euclidean_cluster_node",
-            parameters = [ {'sub_topic_name': 'front_radar'}],
+            parameters = [ "sub_topic_name" : 'front_radar']
             output='screen'
     )
 
-    cluster_node2 = Node(
+    cluster_node = Node(
             package="euclidean_cluster",
             namespace="truck0",
             executable="euclidean_cluster_node",
             name="euclidean_cluster_node_right",
-            parameters = [ {"sub_topic_name": 'right_radar'} , {"pub_topic_name": 'right_clustered_radar_points'}],
+            parameters = [ "sub_topic_name" : 'left_radar']
             output='screen'
     )
 
-    cluster_node3 = Node(
+    cluster_node = Node(
             package="euclidean_cluster",
             namespace="truck0",
             executable="euclidean_cluster_node",
             name="euclidean_cluster_node_left",
-            parameters = [ {"sub_topic_name": 'left_radar'} , {"pub_topic_name": 'left_clustered_radar_points'}],
+            parameters = [ "sub_topic_name" : 'right_radar']
             output='screen'
     )
 
@@ -147,22 +137,27 @@ def generate_launch_description():
             executable='test_fusion_node',
             output='screen',
     )
+    interface_node=Node(
+            package='interface', 
+            namespace='truck0', 
+            name='interface', 
+            executable='interface_node', 
+            output='screen'
+    )
 
     ld = LaunchDescription([
         declare_truck_name_arg,  # Add the launch argument action
         lane_detection_node,
         lane_keeping_node,
         #object_node,
-        cluster_node1,
-        #cluster_node2,
-        #cluster_node3,
+        cluster_node,
         speed_control_node,
         v2v_node,
         plan_node_wo,
         #tracking_node,
+        interface_node,
         yolo_node,
-        test_fusion_node,
-        predict_lc_node
+        test_fusion_node
         #fusion_node
     ])
     return ld

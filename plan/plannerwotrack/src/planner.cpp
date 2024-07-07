@@ -348,11 +348,13 @@ void Planner::timerCallback() {
     
     if(ttc_ <= 2.0f && ttc_ > 0) {
 	    std::cerr << "collision" << ttc_ <<std::endl;
-        std_msgs::msg::Bool msg;
-        msg.data = true;
-        EmergencyPublisher_->publish(msg);
-        send_full_brake();
-        return;
+        if(!lv) {
+            std_msgs::msg::Bool msg;
+            msg.data = true;
+            EmergencyPublisher_->publish(msg);
+            send_full_brake();
+            return;
+        }
     }
     else if (ttc_ <= 3.0f){
         std_msgs::msg::Bool msg;
@@ -363,6 +365,7 @@ void Planner::timerCallback() {
         std_msgs::msg::Bool msg;
         msg.data = false;
         EmergencyPublisher_->publish(msg);
+        caution1Publisher_->publish(msg);
     }
 
     
@@ -382,7 +385,7 @@ void Planner::timerCallback() {
         else {
             if(this->ulane_change) {
                 if(check_side(this->ulane_change)){
-                    //lv = true;
+                    lv = true;
                 }
                 else {
                     lane_change_flag(this->ulane_change); // 0: keep 1: right 2: left
