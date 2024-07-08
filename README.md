@@ -60,16 +60,19 @@
 
 # 3. Run
 > LV run
+
     ```
     source ./install/setup.bash
     ros2 launch scale_truck_control_carla LV.launch.py 
     ```
 > FV1 run
+
     ```
     source ./install/setup.bash
     ros2 launch scale_truck_control_carla FV1.launch.py 
     ```
 > FV2 run
+
     ```
     source ./install/setup.bash
     ros2 launch scale_truck_control_carla FV2.launch.py 
