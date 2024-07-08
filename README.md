@@ -1,7 +1,7 @@
 # After Host PC setting
 
 # 1. Install ROS 2 (Galactic)
-> Open teminal
+
 - Set locale
     ```
     locale  # check for UTF-8
@@ -36,43 +36,27 @@
     sudo apt install python3-colcon-common-extensions
     ```
     
-# 2. Run ROS2 pakcages
-- Open three terminal
-> First terminal
-```
-# Docker exec
-docker start world
-xhost +
-docker exec world /bin/bash
-```
-```
-cd /home/ros2_ws
-source /opt/ros/galactic/setup.bash
-ros2 launch scale_truck_control_ros2 LV.launch.py
-```
-> Second terminal
-```
-# Docker exec
-docker start world
-xhost +
-docker exec world /bin/bash
-```
-```
-cd /home/ros2_ws
-source /opt/ros/galactic/setup.bash
-ros2 launch scale_truck_control_ros2 FV1.launch.py
-```
-> Third terminal
-```
-# Docker exec
-docker start world
-xhost +
-docker exec world /bin/bash
-```
-```
-cd /home/ros2_ws
-source /opt/ros/galactic/setup.bash
-ros2 launch scale_truck_control_ros2 FV2.launch.py
-```
+# 2. Install ROS 2 pakcages
+- Create ROS2 workspace
+    ```
+    source /opt/ros/galactic/setup.bash
+    mkdir -p ~/ros2_ws/src
+    ```
+- Install packages
+    ```
+    cd ~/ros2_ws/src
+    git clone https://github.com/AveesLab/scale_truck_control_carla.git
+    ```
+- Build packages
+    ```
+    cd ~/ros2_ws
+    source /opt/ros/galactic/setup.bash
+    colcon build --packages-select ros2_msg
+    ```
+    ```
+    source ./install/setup.bash
+    colcon build --symlink-install
+    ```
+    
 
 
