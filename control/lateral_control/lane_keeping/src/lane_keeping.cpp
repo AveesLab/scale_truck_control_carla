@@ -32,6 +32,7 @@ LaneKeeping::LaneKeeping()
   qos.best_effort();
   XavSubscriber_ = this->create_subscription<ros2_msg::msg::Xav2lane>(XavSubTopicName, XavSubQueueSize, std::bind(&LaneKeeping::XavSubCallback, this, std::placeholders::_1));
   LaneSubscriber_ = this->create_subscription<ros2_msg::msg::Lane2xav>(LaneTopicName, LaneQueueSize, std::bind(&LaneKeeping::LaneSubCallback, this, std::placeholders::_1));
+  VelSubscriber_ = this->create_subscription<std_msgs::msg::Float32>("velocity", 1, std::bind(&LaneKeeping::VelSubCallback, this, std::placeholders::_1));
   LaneChangeSubscriber_ = this->create_subscription<std_msgs::msg::Int32>("lane_change", 1, std::bind(&LaneKeeping::LaneChangeSubCallback, this, std::placeholders::_1));
   /***********************/
   /* Ros Topic Publisher */
@@ -77,8 +78,8 @@ void LaneKeeping::LoadParams(void)
   this->get_parameter_or("LaneKeeping/lp",lp_, 609.3f);  
   this->get_parameter_or("LaneKeeping/steer_angle",SteerAngle_, 0.0f);
   this->get_parameter_or("LaneKeeping/trust_height",trust_height_, 0.6667f);  
-  float value_k1 = 1.2f;
-  float value_k3 = 1.32f; // 1.3
+  value_k1 = 1.2f;
+  value_k3 = 1.32f; // 1.3
   K1_ = (a_[0] * pow(value_k1, 4)) + (a_[1] * pow(value_k1, 3)) + (a_[2] * pow(value_k1, 2)) + (a_[3] * value_k1) + a_[4];
   K2_ = (b_[0] * pow(value_k1, 4)) + (b_[1] * pow(value_k1, 3)) + (b_[2] * pow(value_k1, 2)) + (b_[3] * value_k1) + b_[4];
   K3_ = (a_[0] * pow(value_k3, 4)) + (a_[1] * pow(value_k3, 3)) + (a_[2] * pow(value_k3, 2)) + (a_[3] * value_k3) + a_[4];
@@ -90,6 +91,14 @@ void LaneKeeping::XavSubCallback(const ros2_msg::msg::Xav2lane::SharedPtr msg)
   cur_vel_ = msg->cur_vel;
   get_steer_coef(cur_vel_);
 }
+
+//sub cur vel from speed control
+void LaneKeeping::VelSubCallback(const std_msgs::msg::Float32::SharedPtr msg)
+{
+  cur_vel_ = msg->data;;
+  get_steer_coef(cur_vel_);
+}
+
 
 //sub coef from lane detection
 void LaneKeeping::LaneSubCallback(const ros2_msg::msg::Lane2xav::SharedPtr msg) 
@@ -137,14 +146,14 @@ void LaneKeeping::LaneChangeSubCallback(const std_msgs::msg::Int32::SharedPtr ms
       lc_left_flag_ = true;
       }
     }
-  
+
 }
 
 tk::spline LaneKeeping::cspline(int mark_) {
   float tY1_ = ((float)480) * 0;
   float tY2_ = ((float)480) * 0.1;
-  float tY3_ = ((float)480) * 0;
-  float tY4_ = ((float)480) * 0.01;
+  float tY3_ = ((float)480) * 0 +80.0f;
+  float tY4_ = ((float)480) * 0.01 + 80.0f;
   float tY5_ = ((float)480) * e1_height_;
   
   std::vector<double> X;
@@ -158,7 +167,8 @@ tk::spline LaneKeeping::cspline(int mark_) {
     int tX3_ = (int)((line_[4].at<float>(2, 0) * pow(tY3_, 2)) + (line_[4].at<float>(1, 0) * tY3_) + line_[4].at<float>(0, 0));
     int tX4_ = (int)((line_[4].at<float>(2, 0) * pow(tY4_, 2)) + (line_[4].at<float>(1, 0) * tY4_) + line_[4].at<float>(0, 0));
     X = {(double)tX3_, (double)tX4_, (double)(640/2)};
-    Y = {(double)tY3_-290.0, (double)tY4_-333.0, (double)480}; 
+    Y = {(double)tY3_, (double)tY4_, (double)480}; 
+
 
     tk::spline s(Y, X, tk::spline::cspline); 
     cspline_eq = s;
@@ -172,7 +182,7 @@ tk::spline LaneKeeping::cspline(int mark_) {
     int tX4_ = (int)((line_[2].at<float>(2, 0) * pow(tY4_, 2)) + (line_[2].at<float>(1, 0) * tY4_) + line_[2].at<float>(0, 0));
   
     X = {(double)tX3_, (double)tX4_, (double)(640/2)};
-    Y = {(double)tY3_-260.0, (double)tY4_-293.0, (double)480}; 
+    Y = {(double)tY3_, (double)tY4_, (double)480}; 
   
     tk::spline s(Y, X, tk::spline::cspline); 
     cspline_eq = s;
@@ -183,18 +193,20 @@ tk::spline LaneKeeping::cspline(int mark_) {
 
 void LaneKeeping::get_steer_coef(float vel){
   float value;
-  if (vel > 1.2f)
-    value = 1.2f;
-  else
-    value = vel;
+  if (vel > 8.0f) {
+    value_k1 = 1.2f;
+    value_k3 = 1.35f;
+  }
+  else if(vel < 8.0f) {
+    value_k1 = 0.6f;
+    value_k3 = 0.005f;
+  }
 
-  if (value < 0.65f){
-    K1_ = K2_ =  K_;
-  }
-  else{
-    K1_ = (a_[0] * pow(value, 4)) + (a_[1] * pow(value, 3)) + (a_[2] * pow(value, 2)) + (a_[3] * value) + a_[4];
-    K2_ = (b_[0] * pow(value, 4)) + (b_[1] * pow(value, 3)) + (b_[2] * pow(value, 2)) + (b_[3] * value) + b_[4];
-  }
+
+  K1_ = (a_[0] * pow(value_k1, 4)) + (a_[1] * pow(value_k1, 3)) + (a_[2] * pow(value_k1, 2)) + (a_[3] * value_k1) + a_[4];
+  K2_ = (b_[0] * pow(value_k1, 4)) + (b_[1] * pow(value_k1, 3)) + (b_[2] * pow(value_k1, 2)) + (b_[3] * value_k1) + b_[4];
+  K3_ = (a_[0] * pow(value_k3, 4)) + (a_[1] * pow(value_k3, 3)) + (a_[2] * pow(value_k3, 2)) + (a_[3] * value_k3) + a_[4];
+  K4_ = (b_[0] * pow(value_k3, 4)) + (b_[1] * pow(value_k3, 3)) + (b_[2] * pow(value_k3, 2)) + (b_[3] * value_k3) + b_[4];
   
 }
 
@@ -249,7 +261,7 @@ void LaneKeeping::controlSteer() {
         lane_keeping = true;
         right_cnt=0;
         current_center = 4; 
-      //}
+     //}
     }
     return;
   }

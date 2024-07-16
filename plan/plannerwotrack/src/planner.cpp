@@ -66,6 +66,7 @@ void Planner::LeftObjectSubcallback(const sensor_msgs::msg::PointCloud2::SharedP
 
 void Planner::RightObjectSubcallback(const sensor_msgs::msg::PointCloud2::SharedPtr msg) {
     auto data_ = msg->data;
+    std::cerr << data_.size() << "size" << std::endl;
     if(data_.size()){
         right_obstacle = true;
     }
@@ -137,7 +138,7 @@ void Planner::CAMSubcallback(const ros2_msg::msg::V2XCAM::SharedPtr msg) {
 void Planner::CUSTOMSubcallback(const ros2_msg::msg::V2XCUSTOM::SharedPtr msg) {
     this->target_distance = msg->timegap;
     this->emergency_flag_from = msg->emergency_flag;
-    this->caution1mode = msg->caution_mode_lane1;
+    if(msg->caution_mode_lane1) this->caution1mode = msg->caution_mode_lane1;
 }
 
 float Planner::check_ttc() {
@@ -202,7 +203,7 @@ void Planner::calculate_cacc_param() {
 void Planner::calculate_acc_param() {
     if(detected_objects_on_ego_lane.size() != 0) this->current_distance = detected_objects_on_ego_lane.front().distance;
     else this->current_distance = 0;
-    des_spacing = 1.4f *  this->current_velocity;
+    des_spacing = 1.1f *  this->current_velocity;
     spacing_err = this->current_distance - des_spacing;
     speed_err = detected_objects_on_ego_lane.front().velocity;
         std::cerr << this->current_distance << " " << speed_err << std::endl;
@@ -286,21 +287,34 @@ void Planner::check_objects_ego_lane() {
 void Planner::check_ego_lane_num() {
     if(line_[1].at<float>(0,0) > 320.0) cur_ego_lane = 2;
     else cur_ego_lane = 4;
+
+
+    if(lc_mode) {
+        if(lc_mode != cur_ego_lane)
+        {
+            cur_ego_lane = lc_mode;
+        }
+    }
 }
 
 
 void Planner::lane_change_flag(int num) {
-    if(num == 0) return;
+    if(num == 0) {
+        lc_mode = 0;
+        return;
+    }
     if(num == 1) {
         std_msgs::msg::Int32 msg;
         msg.data = 2;
         lcPublisher_->publish(msg);
+        lc_mode = 4;
         //cur_ego_lane = 4;
     }
     else if (num == 2) {
         std_msgs::msg::Int32 msg;
         msg.data = 4;
-        lcPublisher_->publish(msg);        
+        lcPublisher_->publish(msg); 
+        lc_mode = 2;       
         //cur_ego_lane = 2;
     }
 
@@ -308,11 +322,14 @@ void Planner::lane_change_flag(int num) {
 
 bool Planner::check_side(int num) {
     if(num == 1){
+        std::cerr << right_obstacle << std::endl;
         return right_obstacle;
     }
     else if(num == 2) {
         return left_obstacle;
     }
+    else 
+        return false;
 }
 
 void Planner::timerCallback() {
@@ -349,12 +366,27 @@ void Planner::timerCallback() {
     if(ttc_ <= 2.0f && ttc_ > 0) {
 	    std::cerr << "collision" << ttc_ <<std::endl;
         if(!lv) {
+            /*
             std_msgs::msg::Bool msg;
             msg.data = true;
             EmergencyPublisher_->publish(msg);
             send_full_brake();
             return;
+            */
+            if(this->ulane_change ) {
+                if(check_side(this->ulane_change)){
+                std_msgs::msg::Bool msg;
+                msg.data = true;
+                EmergencyPublisher_->publish(msg);
+                send_full_brake();
+            return;
+                }
+                else {
+                    lane_change_flag(this->ulane_change); // 0: keep 1: right 2: left
+                }
+            }
         }
+
     }
     else if (ttc_ <= 3.0f){
         std_msgs::msg::Bool msg;
@@ -374,12 +406,19 @@ void Planner::timerCallback() {
         if(caution1mode) {
             if(this->ulane_change) {
                 if(check_side(this->ulane_change)){
-                    send_full_brake();
+                    std_msgs::msg::Float32 msg;
+                    msg.data = 0.0;
+                    TargetVelocityPublisher_->publish(msg);
+                    std::cerr << "full brake" << ttc_ <<std::endl;
                     return;
                 }
                 else {
                     lane_change_flag(this->ulane_change); // 0: keep 1: right 2: left
+                    this->caution1mode = false;
                 }
+            }
+            else {
+                lc_mode = 0;
             }
         }
         else {

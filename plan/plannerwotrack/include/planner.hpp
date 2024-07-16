@@ -75,6 +75,7 @@ private:
     float target_distance = 14.0f;
     float current_distance = 0.0f;
     float dt_ = 0.01f;
+    int lc_mode= 0;
     float des_spacing = 0.0f;
     float spacing_err = 0.0f;
     float speed_err = 0.0f;

@@ -154,7 +154,7 @@ def generate_launch_description():
         lane_keeping_node,
         #object_node,
         cluster_node1,
-        #cluster_node2,
+        cluster_node2,
         #cluster_node3,
         speed_control_node,
         v2v_node,

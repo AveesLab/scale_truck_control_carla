@@ -50,32 +50,34 @@ def generate_launch_description():
             'stdout': 'screen',
             'stderr': 'screen',
             })
-    cluster_node = Node(
+
+    cluster_node1 = Node(
             package="euclidean_cluster",
             namespace="truck0",
             executable="euclidean_cluster_node",
             name="euclidean_cluster_node",
-            parameters = [ "sub_topic_name" : 'front_radar']
+            parameters = [ {'sub_topic_name': 'front_radar'}],
             output='screen'
     )
 
-    cluster_node = Node(
+    cluster_node2 = Node(
             package="euclidean_cluster",
             namespace="truck0",
             executable="euclidean_cluster_node",
             name="euclidean_cluster_node_right",
-            parameters = [ "sub_topic_name" : 'left_radar']
+            parameters = [ {"sub_topic_name": 'right_radar'} , {"pub_topic_name": 'right_clustered_radar_points'}],
             output='screen'
     )
 
-    cluster_node = Node(
+    cluster_node3 = Node(
             package="euclidean_cluster",
             namespace="truck0",
             executable="euclidean_cluster_node",
             name="euclidean_cluster_node_left",
-            parameters = [ "sub_topic_name" : 'right_radar']
+            parameters = [ {"sub_topic_name": 'left_radar'} , {"pub_topic_name": 'left_clustered_radar_points'}],
             output='screen'
     )
+
 
     speed_control_node=Node(
             package='speed_control', 
@@ -148,10 +150,10 @@ def generate_launch_description():
     ld = LaunchDescription([
         declare_truck_name_arg,  # Add the launch argument action
         lane_detection_node,
-        lane_keeping_node,
+        #lane_keeping_node,
         #object_node,
-        cluster_node,
-        speed_control_node,
+        cluster_node1,
+        #speed_control_node,
         v2v_node,
         plan_node_wo,
         #tracking_node,

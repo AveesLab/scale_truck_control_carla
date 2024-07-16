@@ -785,8 +785,8 @@ float LaneDetector::display_img(Mat _frame, int _delay, bool _view) {
             int extrarightInt_points_number_ = Mat(extrarightInt).rows;
 
             polylines(_frame, &leftInt_points, &leftInt_points_number_, 1, false, Scalar(255, 100, 100), 10);
-            polylines(_frame, &rightInt_points, &rightInt_points_number_, 1, false, Scalar(255, 100, 100), 10);          
-            polylines(_frame, &extrarightInt_points, &extrarightInt_points_number_, 1, false, Scalar(255, 100, 100), 10);
+            polylines(_frame, &rightInt_points, &rightInt_points_number_, 1, false, Scalar(100, 255, 100), 10);          
+            polylines(_frame, &extrarightInt_points, &extrarightInt_points_number_, 1, false, Scalar(100, 100, 255), 10);
 
             //fillPoly, Drivable Area
             //std::reverse(rightInt.begin(), rightInt.end());
