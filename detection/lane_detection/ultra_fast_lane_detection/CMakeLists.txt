@@ -11,12 +11,12 @@ if (CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64")
 else()
   message("embed_platform off")
   # cuda
-  include_directories(/usr/local/cuda/include)
-  link_directories(/usr/local/cuda/lib64)
+  include_directories(/usr/local/cuda-11.8/include)
+  link_directories(/usr/local/cuda-11.8/lib64)
 
   # tensorrt
-  include_directories(/home/nvidia/TensorRT-8.2.5.1/include)
-  link_directories(/home/nvidia/TensorRT-8.2.5.1/lib)
+  include_directories(/home/nvidia/Downloads/TensorRT-8.5.3.1/include)
+  link_directories(/home/nvidia/Downloads/TensorRT-8.5.3.1/lib)
 endif()
 # Enable CUDA
 set(CMAKE_CUDA_COMPILER /usr/local/cuda/bin/nvcc)

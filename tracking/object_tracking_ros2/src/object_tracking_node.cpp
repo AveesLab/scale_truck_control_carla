@@ -21,7 +21,7 @@ ObjectTrackingNode::~ObjectTrackingNode()
 
 void ObjectTrackingNode::init() {
     RCLCPP_INFO(this->get_logger(), "Tracking_Init Start");
-    gettimeofday(&startTime_, NULL);
+    //gettimeofday(&startTime_, NULL);
 
     // sub
     // std::string BboxArrayTopicName;

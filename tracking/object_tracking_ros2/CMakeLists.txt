@@ -41,11 +41,6 @@ add_executable(object_tracking_ros2 ${PROJECT_SOURCES})
 ament_target_dependencies(object_tracking_ros2 ${PROJECT_SOURCES_DEPENDENCIES})
 
 
-install(DIRECTORY
-    include/
-    DESTINATION include
-)
-
 install(TARGETS
     object_tracking_ros2
     DESTINATION lib/${PROJECT_NAME}    

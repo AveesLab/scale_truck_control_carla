@@ -20,7 +20,7 @@ SensorFusingNode::~SensorFusingNode()
 
 void SensorFusingNode::init() {
     RCLCPP_INFO(this->get_logger(), "SensorFusing_Init Start");
-    gettimeofday(&startTime_, NULL);
+    //gettimeofday(&startTime_, NULL);
 
     /* SUB */
     std::string RadarTopicName;

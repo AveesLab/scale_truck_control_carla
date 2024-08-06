@@ -48,7 +48,7 @@ LaneDetector::LaneDetector()
   this->get_parameter_or("image_view/wait_key_delay", waitKeyDelay_, 3);
 
   /******* recording log *******/    
-  gettimeofday(&start_, NULL);
+  //gettimeofday(&start_, NULL);
 
   /******* Camera  calibration *******/
   double f_matrix[9], f_dist_coef[5], r_matrix[9], r_dist_coef[5];
@@ -183,7 +183,7 @@ void LaneDetector::lanedetectInThread()
   while(!controlDone_ && rclcpp::ok()) 
   {
     struct timeval start_time, end_time, cur_time;
-    gettimeofday(&start_time, NULL);
+    //gettimeofday(&start_time, NULL);
 
     if(imageStatus_) { /* use front_cam  */
 
@@ -204,7 +204,7 @@ void LaneDetector::lanedetectInThread()
       rclcpp::shutdown();
     }
 
-    gettimeofday(&end_time, NULL);
+    //gettimeofday(&end_time, NULL);
     diff_time += ((end_time.tv_sec - start_time.tv_sec) * 1000.0) + ((end_time.tv_usec - start_time.tv_usec) / 1000.0);
     cnt++;
 
@@ -820,7 +820,7 @@ Mat LaneDetector::draw_lane(Mat _sliding_frame, Mat _frame) {
 
     static Point prev_lane_center;
 
-    gettimeofday(&endTime, NULL);
+    //gettimeofday(&endTime, NULL);
     if (!flag){
       diffTime = (endTime.tv_sec - start_.tv_sec) + (endTime.tv_usec - start_.tv_usec)/1000000.0;
       flag = true;

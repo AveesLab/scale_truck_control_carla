@@ -53,7 +53,7 @@ bool YoloObjectDetectionNode::readParameters(){
 
 void YoloObjectDetectionNode::init() {
   RCLCPP_INFO(this->get_logger(),"Yolo_Init Start");
-  gettimeofday(&startTime_, NULL);
+  //gettimeofday(&startTime_, NULL);
 
   // Initialize publisher and subscriber
   // std::string rearCamTopicName;
@@ -379,7 +379,7 @@ void YoloObjectDetectionNode::recordData(struct timeval startTime){
     flag = true;
   }
   else{
-    gettimeofday(&currentTime, NULL);
+    //gettimeofday(&currentTime, NULL);
     diff_time = ((currentTime.tv_sec - startTime.tv_sec)) + ((currentTime.tv_usec - startTime.tv_usec)/1000000.0);
     {
       std::scoped_lock lock(rear_cam_mutex_);
