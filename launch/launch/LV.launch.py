@@ -17,6 +17,11 @@ def generate_launch_description():
         default_value='truck0',  # Default value if none provided
         description='Name of the truck'
     )
+    declare_carla_sync_arg = DeclareLaunchArgument(
+        'carla_sync',  # Name of the launch argument
+        default_value="true",  # Default value if none provided
+        description='carla_sync_mode'
+    )
 
     base_directory = os.path.dirname(os.path.realpath(__file__)) 
     config_directory = os.path.join(base_directory, '../../', 'config') 
@@ -56,7 +61,7 @@ def generate_launch_description():
             namespace="truck0",
             executable="euclidean_cluster_node",
             name="euclidean_cluster_node",
-            parameters = [ {'sub_topic_name': 'front_radar'}],
+            parameters = [ {'sub_topic_name': 'radar0'}],
             output='screen'
     )
 
@@ -65,7 +70,7 @@ def generate_launch_description():
             namespace="truck0",
             executable="euclidean_cluster_node",
             name="euclidean_cluster_node_right",
-            parameters = [ {"sub_topic_name": 'right_radar'} , {"pub_topic_name": 'right_clustered_radar_points'}],
+            parameters = [ {"sub_topic_name": 'radar2'} , {"pub_topic_name": 'right_clustered_radar_points'}],
             output='screen'
     )
 
@@ -74,7 +79,7 @@ def generate_launch_description():
             namespace="truck0",
             executable="euclidean_cluster_node",
             name="euclidean_cluster_node_left",
-            parameters = [ {"sub_topic_name": 'left_radar'} , {"pub_topic_name": 'left_clustered_radar_points'}],
+            parameters = [ {"sub_topic_name": 'radar1'} , {"pub_topic_name": 'left_clustered_radar_points'}],
             output='screen'
     )
 
@@ -84,6 +89,7 @@ def generate_launch_description():
             namespace='truck0', 
             name='speed_control_node', 
             executable='speed_control_node', 
+            parameters=[{'carla_sync': LaunchConfiguration('carla_sync')}],
             output='screen')
     v2v_node=Node(
             package='v2v', 
@@ -91,7 +97,7 @@ def generate_launch_description():
             name='v2v', 
             executable='v2v_node', 
             output='screen',
-            parameters=[{'truck_name': LaunchConfiguration('truck_name')}])
+            parameters=[{'truck_name': LaunchConfiguration('truck_name') }])
 
     plan_node=Node(
             package='planner', 
@@ -99,14 +105,14 @@ def generate_launch_description():
             name='planner', 
             executable='planner_node', 
             output='screen',
-            parameters=[{'truck_name': LaunchConfiguration('truck_name')}])
+            parameters=[{'truck_name': LaunchConfiguration('truck_name'), 'carla_sync': LaunchConfiguration('carla_sync')} ])
     plan_node_wo=Node(
             package='plannerwo', 
             namespace='truck0', 
             name='plannerwo', 
             executable='planner_node_wo', 
             output='screen',
-            parameters=[{'truck_name': LaunchConfiguration('truck_name')}])
+            parameters=[{'truck_name': LaunchConfiguration('truck_name'), 'carla_sync': LaunchConfiguration('carla_sync')}])
     tracking_node=Node(
             package='object_tracking_ros2',
             namespace='truck0',
@@ -149,11 +155,14 @@ def generate_launch_description():
 
     ld = LaunchDescription([
         declare_truck_name_arg,  # Add the launch argument action
+        declare_carla_sync_arg,
         lane_detection_node,
-        #lane_keeping_node,
+        lane_keeping_node,
         #object_node,
         cluster_node1,
-        #speed_control_node,
+        cluster_node2,
+        cluster_node3,
+        speed_control_node,
         v2v_node,
         plan_node_wo,
         #tracking_node,

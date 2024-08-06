@@ -14,6 +14,8 @@ Planner::Planner()
     for (int i = 0; i < 8; i++) {
         line_.emplace_back(Mat::zeros(3, 1, CV_32F));
     }
+    this->get_parameter_or("carla_sync",sync_,false);
+    std::cerr << sync_ << std::endl;
     //DistanceSubscriber_ = this->create_subscription<std_msgs::msg::Float32>("min_distance", 10, std::bind(&Planner::DistanceSubCallback, this, std::placeholders::_1));
     if(lv) TargetSubscriber_ = this->create_subscription<ros2_msg::msg::Target>("target",10,std::bind(&Planner::TargetSubCallback,this,std::placeholders::_1));
     EmergencyPublisher_ = this->create_publisher<std_msgs::msg::Bool>("emergency_flag", 10);
@@ -38,6 +40,7 @@ Planner::Planner()
 }
 
 void Planner::DetectedObjectsSubcallback(const ros2_msg::msg::FusingArray::SharedPtr msg) {
+    detected_objects_ = true;
     if(!received_) received_ = true;
     detected_objects.clear();
     object_info info;
@@ -55,6 +58,7 @@ void Planner::DetectedObjectsSubcallback(const ros2_msg::msg::FusingArray::Share
 }
 
 void Planner::LeftObjectSubcallback(const sensor_msgs::msg::PointCloud2::SharedPtr msg) {
+    left_object = true;
     auto data_ = msg->data;
     if(data_.size()){
         left_obstacle = true;
@@ -65,6 +69,7 @@ void Planner::LeftObjectSubcallback(const sensor_msgs::msg::PointCloud2::SharedP
 }
 
 void Planner::RightObjectSubcallback(const sensor_msgs::msg::PointCloud2::SharedPtr msg) {
+    right_object  = true;
     auto data_ = msg->data;
     std::cerr << data_.size() << "size" << std::endl;
     if(data_.size()){
@@ -76,6 +81,8 @@ void Planner::RightObjectSubcallback(const sensor_msgs::msg::PointCloud2::Shared
 }
 
 void Planner::LaneSubcallback(const ros2_msg::msg::Lane2xav::SharedPtr msg) {
+    lane_ = true;
+    std::cerr << "lane sub" << std::endl;
     poly_coef_.coef = msg->coef;
     line_[0].at<float>(2,0) = poly_coef_.coef[0].a; // lane 0
     line_[0].at<float>(1,0) = poly_coef_.coef[0].b;
@@ -332,7 +339,28 @@ bool Planner::check_side(int num) {
         return false;
 }
 
+bool Planner::data_received() {
+    if(detected_objects_ && left_object && right_object && lane_ ) {
+        detected_objects_ = false;
+        left_object = false; 
+        right_object = false;
+        lane_ = false;
+        return true;
+    }
+    else {
+        //std::cerr << detected_objects_  << " " << left_object << " " <<right_object << " " <<lane_ << std::endl;
+        return false;
+        }
+
+}
+
 void Planner::timerCallback() {
+    if(sync_) {
+        if(data_received()) std::cerr << "All data received " << std::endl;
+        else return;
+    }
+
+
     if(!received_) {
         std::cerr << "platoon emergency mode" << std::endl;
         std_msgs::msg::Bool msg;
@@ -444,7 +472,7 @@ void Planner::timerCallback() {
         else{
                 this->current_distance = 0.0f;
                 //std::cerr << "Check Acc"<< std::endl;
-                msg.data = 90.0;
+                msg.data = 16.6f;
         }
         
         TargetVelocityPublisher_->publish(msg);

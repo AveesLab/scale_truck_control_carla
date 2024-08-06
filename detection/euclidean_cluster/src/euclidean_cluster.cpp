@@ -41,6 +41,7 @@ void euclidean_cluster_node::performClustering(const pcl::PointCloud<PointXYZIV>
 }
 
 void euclidean_cluster_node::publishClusters(const pcl::PointCloud<PointXYZIV>::Ptr &cloud, const std::vector<pcl::PointIndices> &cluster_indices) {
+    std::cerr << "pub" << std::endl;
     sensor_msgs::msg::PointCloud2 output;
     pcl::PointCloud<PointXYZIV>::Ptr clustered_cloud(new pcl::PointCloud<PointXYZIV>);
 

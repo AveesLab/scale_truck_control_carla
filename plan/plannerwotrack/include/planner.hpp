@@ -64,7 +64,7 @@ private:
     bool is_target_trailer = false;
     int preceding_truck_id = 0;
     std::vector<Mat> line_;
-    bool emergency_flag = true;
+    bool emergency_flag = false; //test
     float stop_dist = 3.0f;
     std::string truck_name;
     bool lv = false;
@@ -89,6 +89,11 @@ private:
     bool right_obstacle = false;
     bool left_obstacle = false;
     bool received_ = false;
+    bool detected_objects_ = false;
+    bool left_object = false; 
+    bool right_object = false;
+    bool lane_ = false;
+    bool sync_ = false;
     rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr DistanceSubscriber_;
     rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr VelocitySubscriber_;
     rclcpp::Subscription<ros2_msg::msg::Target>::SharedPtr TargetSubscriber_;
@@ -132,6 +137,7 @@ private:
     bool check_side(int num);
     void LeftObjectSubcallback(const sensor_msgs::msg::PointCloud2::SharedPtr msg); 
     void RightObjectSubcallback(const sensor_msgs::msg::PointCloud2::SharedPtr msg);
+    bool data_received();
 };
 
 }

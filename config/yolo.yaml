@@ -15,7 +15,7 @@
     image_view/wait_key_delay: 1
     image_view/enable_console_output: false
 
-    subscribers/front_camera_reading/topic: front_camera
+    subscribers/front_camera_reading/topic: camera0
     subscribers/front_camera_reading/queue_size: 1
     subscribers/rear_camera_reading/topic: rear_cam/image_raw
     subscribers/rear_camera_reading/queue_size: 1

@@ -1,6 +1,6 @@
 /**/LaneDetector:
   ros__parameters:
-    subscribers/image_to_lane/topic: front_camera
+    subscribers/image_to_lane/topic: camera0
     subscribers/image_to_lane/queue_size: 1
     subscribers/rearImage_to_lane/topic: null
     subscribers/rearImage_to_lane/queue_size: 1

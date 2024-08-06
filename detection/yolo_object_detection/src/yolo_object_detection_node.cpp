@@ -97,7 +97,6 @@ void YoloObjectDetectionNode::init() {
   /* Ros Topic Subscriber */
   /************************/
   rclcpp::QoS qos(rclcpp::QoSInitialization::from_rmw(rmw_qos_profile_sensor_data));
-  qos.best_effort();
   frontCamImgSubscriber_ = this->create_subscription<sensor_msgs::msg::Image>(frontCamTopicName, qos, std::bind(&YoloObjectDetectionNode::frontCamImgCallback, this, std::placeholders::_1));
 
   // rearCamImgSubscriber_ = this->create_subscription<sensor_msgs::msg::Image>(rearCamTopicName, rearCamQueueSize, std::bind(&YoloObjectDetectionNode::rearCamImgCallback, this, std::placeholders::_1));
@@ -122,7 +121,9 @@ void YoloObjectDetectionNode::init() {
 
   yoloDetector_ = new Detector(cfg_, weights_, 0.95f/* thresh*/);
   yoloDetector_->detect(img_for_init);
-
+  yoloDetector_->detect(img_for_init);
+  yoloDetector_->detect(img_for_init);
+  std::cerr << " init finish" << std::endl;
   detectThread_ = std::thread(&YoloObjectDetectionNode::detectInThread, this);
 }
 
@@ -205,7 +206,7 @@ void YoloObjectDetectionNode::detectInThread()
       objects_ = yoloDetector_->detect(frontCamImageCopy_);
       //processing_objects = removeDuplication(objects_);
       // objects_ = yoloDetector_->detect(mat1);
-      if(objects_.size() == 0 )std::cerr  << " empty "  << std::endl;
+      //if(objects_.size() == 0 ) //std::cerr  << " empty "  << std::endl;
        cv::Mat draw_img;
 
        draw_img = frontCamImageCopy_.clone();
@@ -217,6 +218,7 @@ void YoloObjectDetectionNode::detectInThread()
        cv::waitKey(waitKeyDelay_);
        
       publishInThread(objects_);
+      ImageStatus_ = false;
     }
 
 

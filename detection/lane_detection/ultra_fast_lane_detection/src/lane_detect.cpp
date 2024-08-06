@@ -44,7 +44,7 @@ LaneDetector::LaneDetector()
   /* Ros Topic Subscriber */
   /************************/
   rclcpp::QoS qos(rclcpp::QoSInitialization::from_rmw(rmw_qos_profile_sensor_data));
-  qos.best_effort();
+  
 
   ImageSubscriber_ = this->create_subscription<sensor_msgs::msg::Image>(ImageSubTopicName, qos, std::bind(&LaneDetector::ImageSubCallback, this, std::placeholders::_1));
   DistanceSubscriber_ = this->create_subscription<std_msgs::msg::Float32>("min_distance", 10, std::bind(&LaneDetector::DistanceSubCallback, this, std::placeholders::_1));
@@ -321,6 +321,8 @@ void LaneDetector::lanedetectInThread()
     
       xav.coef = lane_coef_.coef; 
       XavPublisher_->publish(xav);
+      std::cerr << "lane pub" << std::endl;
+      imageStatus_ = false;
     }
 
     if(!isNodeRunning_) {
@@ -353,7 +355,7 @@ void LaneDetector::ImageSubCallback(const sensor_msgs::msg::Image::SharedPtr msg
   }
 
   if(!cam_image->image.empty()) {
-
+    std::cerr << " check image arrive" << std::endl;
     camImageCopy_ = cam_image->image.clone();
     prev_img = camImageCopy_;
     imageStatus_ = true;
@@ -361,7 +363,11 @@ void LaneDetector::ImageSubCallback(const sensor_msgs::msg::Image::SharedPtr msg
     cam_condition_variable.notify_one();
   }
   else if(!prev_img.empty()) {
-    camImageCopy_ = prev_img;
+    std::cerr << " check image arrive2" << std::endl;
+prev_img = camImageCopy_;
+    imageStatus_ = true;
+    cam_new_frame_arrived = true;
+    cam_condition_variable.notify_one();
   }
 }
 void LaneDetector::DistanceSubCallback(const std_msgs::msg::Float32::SharedPtr msg) {

@@ -40,20 +40,27 @@ public:
 
 private:
     rclcpp::Publisher<ros2_msg::msg::FusingArray>::SharedPtr FusingPublisher_;
+    rclcpp::TimerBase::SharedPtr timer_;
 
     void callback(const ros2_msg::msg::BboxArray::ConstSharedPtr image_msg, const sensor_msgs::msg::PointCloud2::ConstSharedPtr points_msg);
+    void timerCallback();
 
-    message_filters::Subscriber<ros2_msg::msg::BboxArray> bbox_sub_;
-    message_filters::Subscriber<sensor_msgs::msg::PointCloud2> pointcloud_sub_;
-
-    typedef message_filters::sync_policies::ApproximateTime<ros2_msg::msg::BboxArray, sensor_msgs::msg::PointCloud2> SyncPolicy;
-    std::shared_ptr<message_filters::Synchronizer<SyncPolicy>> sync_;
+    rclcpp::Subscription<ros2_msg::msg::BboxArray>::SharedPtr BboxArraySubscriber_;
+    rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr PointcloudSubscriber_;
+    ros2_msg::msg::BboxArray bbox_msg;
+    sensor_msgs::msg::PointCloud2 points_msg;
+    void BboxArraySubCallback(const ros2_msg::msg::BboxArray::SharedPtr msg);
+    void PointcloudSubCallback(const sensor_msgs::msg::PointCloud2::SharedPtr msg);
+    bool isDataReady();
 
     cv::Mat frontCamImageCopy_;
 
     cv::Mat camera_matrix_;
     cv::Mat dist_coeffs_;
     cv::Mat transform_;
+
+    bool isBboxReady = false;
+    bool isPointsReady = false;
 };
 
 } // namespace yolo_object_detectio

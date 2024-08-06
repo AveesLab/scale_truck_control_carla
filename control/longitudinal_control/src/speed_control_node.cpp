@@ -2,15 +2,19 @@
 
 
 Controller::Controller()
-          : Node("controller")
+          : Node("controller", rclcpp::NodeOptions()
+                              .allow_undeclared_parameters(true)
+                              .automatically_declare_parameters_from_overrides(true))
 {
   auto qos_profile = rclcpp::QoS(rclcpp::KeepLast(1));
-
+  this->get_parameter_or("carla_sync",sync_,false);
+  
   TargetVelocitysubscriber_ = this->create_subscription<std_msgs::msg::Float32>(
     "target_velocity", 
     qos_profile,
     std::bind(&Controller::TargetVelocityCallback, this, _1)
   );
+  
   VelocitySubscriber = this->create_subscription<std_msgs::msg::Float32>("velocity",1,std::bind(&Controller::velocity_callback, this, _1));
   ControlPublisher = this->create_publisher<std_msgs::msg::Float32>("velocity_control",1);
   timer_ = this->create_wall_timer(
@@ -24,12 +28,21 @@ void Controller::velocity_callback(const std_msgs::msg::Float32::SharedPtr msg) 
 
 void Controller::TargetVelocityCallback(const std_msgs::msg::Float32::SharedPtr msg) 
 {
+  target_velocity_ = true;
   tx_vel_ = msg->data;
 }
 
 
 void Controller::SetSpeed()
 {
+  if(sync_) {
+      if(target_velocity_) {
+        target_velocity_ = false;
+      }
+      else {
+        return;
+      }
+  }
   float dt_ = 0.01;
   Throttle_PID(dt_, tx_vel_, cur_vel_);
 }

@@ -40,6 +40,9 @@ public:
     float Kf_brake_;
     //float dt_ = 0.1;
 
+    bool sync_ = false;
+    bool target_velocity_ = false;
+
 private:
     void TargetVelocityCallback(const std_msgs::msg::Float32::SharedPtr msg);
     void topic_callback(const std_msgs::msg::String::SharedPtr msg);
