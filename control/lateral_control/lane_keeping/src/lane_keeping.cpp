@@ -24,6 +24,7 @@ LaneKeeping::LaneKeeping()
   this->get_parameter_or("subscribers/xavier_to_lane/queue_size", XavSubQueueSize, 1);
   this->get_parameter_or("subscribers/lane_to_xavier/topic", LaneTopicName, std::string("lane2xav_msg"));
   this->get_parameter_or("subscribers/lane_to_xavier/queue_size", LaneQueueSize, 1);
+  this->get_parameter_or("carla_sync_with_delay", sync_with_delay,false);
   
   /************************/
   /* Ros Topic Subscriber */
@@ -34,6 +35,7 @@ LaneKeeping::LaneKeeping()
   LaneSubscriber_ = this->create_subscription<ros2_msg::msg::Lane2xav>(LaneTopicName, LaneQueueSize, std::bind(&LaneKeeping::LaneSubCallback, this, std::placeholders::_1));
   VelSubscriber_ = this->create_subscription<std_msgs::msg::Float32>("velocity", 1, std::bind(&LaneKeeping::VelSubCallback, this, std::placeholders::_1));
   LaneChangeSubscriber_ = this->create_subscription<std_msgs::msg::Int32>("lane_change", 1, std::bind(&LaneKeeping::LaneChangeSubCallback, this, std::placeholders::_1));
+  if(sync_with_delay) WaitLaneSubscriber_ = this->create_subscription<std_msgs::msg::Bool>("wait_lane",qos,std::bind(&LaneKeeping::WaitLaneSubCallback,this,std::placeholders::_1));
   /***********************/
   /* Ros Topic Publisher */
   /***********************/
@@ -129,6 +131,17 @@ void LaneKeeping::LaneSubCallback(const ros2_msg::msg::Lane2xav::SharedPtr msg)
   controlSteer();
 
   SteerPublisher_->publish(steer_);
+  
+}
+
+void LaneKeeping::WaitLaneSubCallback(const std_msgs::msg::Bool::SharedPtr msg) 
+{ 
+    if(msg->data) {
+      return;
+    }
+    else {
+      SteerPublisher_->publish(steer_);
+    }
   
 }
 

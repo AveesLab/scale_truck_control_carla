@@ -59,6 +59,7 @@ namespace lanekeeping {
     int left_cnt = 0;
   private:
 
+    bool sync_with_delay = false;
     float value_k1 = 1.2f;
     float value_k3 = 1.32f; // 1.3
     void LoadParams(void);
@@ -69,11 +70,13 @@ namespace lanekeeping {
     rclcpp::Subscription<ros2_msg::msg::Xav2lane>::SharedPtr XavSubscriber_;
     rclcpp::Subscription<ros2_msg::msg::Lane2xav>::SharedPtr LaneSubscriber_;
     rclcpp::Subscription<std_msgs::msg::Int32>::SharedPtr LaneChangeSubscriber_;
+    rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr WaitLaneSubscriber_;
     //Callback Func
     void VelSubCallback(const std_msgs::msg::Float32::SharedPtr msg);
     void XavSubCallback(const ros2_msg::msg::Xav2lane::SharedPtr msg);
     void LaneSubCallback(const ros2_msg::msg::Lane2xav::SharedPtr msg);
     void LaneChangeSubCallback(const std_msgs::msg::Int32::SharedPtr msg);
+    void WaitLaneSubCallback(const std_msgs::msg::Bool::SharedPtr msg);
     tk::spline cspline(int mark_);
     float SteerAngle_;
     float eL_height_, e1_height_, lp_, trust_height_;

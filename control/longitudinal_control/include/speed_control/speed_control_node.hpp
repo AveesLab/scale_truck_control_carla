@@ -9,6 +9,7 @@
 #include "ros2_msg/msg/ocr2lrc.hpp"
 #include "ros2_msg/msg/lrc2ocr.hpp"
 #include "std_msgs/msg/float32.hpp"
+#include "std_msgs/msg/bool.hpp"
 
 using namespace std::chrono_literals;
 using std::placeholders::_1;
@@ -41,10 +42,14 @@ public:
     //float dt_ = 0.1;
 
     bool sync_ = false;
+    bool sync_with_delay = false;
     bool target_velocity_ = false;
+    bool no_wait_ = false;
+    bool CurVelArrived = false;
 
 private:
     void TargetVelocityCallback(const std_msgs::msg::Float32::SharedPtr msg);
+    void WaitVelSubCallback(const std_msgs::msg::Bool::SharedPtr msg);
     void topic_callback(const std_msgs::msg::String::SharedPtr msg);
     void SetSpeed();
     void Throttle_PID(double dt_, float tar_vel, float current_vel);
@@ -54,6 +59,7 @@ private:
     rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr ControlPublisher;
     rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr TargetVelocitysubscriber_;
     rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr VelocitySubscriber;
+    rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr WaitVelSubscriber_;
 };
 
 //float tar_vel, float current_vel
