@@ -94,6 +94,7 @@ private:
     bool right_object = false;
     bool lane_ = false;
     bool sync_ = false;
+    bool sync_with_delay = false;
     rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr DistanceSubscriber_;
     rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr VelocitySubscriber_;
     rclcpp::Subscription<ros2_msg::msg::Target>::SharedPtr TargetSubscriber_;

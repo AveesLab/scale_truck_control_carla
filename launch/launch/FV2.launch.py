@@ -17,13 +17,24 @@ def generate_launch_description():
         default_value='truck2',  # Default value if none provided
         description='Name of the truck'
     )
+    declare_carla_sync_arg = DeclareLaunchArgument(
+        'carla_sync',  # Name of the launch argument
+        default_value="true",  # Default value if none provided
+        description='carla_sync_mode'
+    )
+    declare_carla_sync_with_delay_arg = DeclareLaunchArgument(
+        'carla_sync_with_delay',  # Name of the launch argument
+        default_value="false",  # Default value if none provided
+        description='carla_sync_with_delay_mode'
+    )
 
     base_directory = os.path.dirname(os.path.realpath(__file__)) 
     config_directory = os.path.join(base_directory, '../../', 'config') 
     
     ros_param_file = os.path.join(config_directory,'config.yaml')                 
-    lane_param_file = os.path.join(config_directory,'FV1.yaml')                 
-
+    lane_param_file = os.path.join(config_directory,'LV.yaml')                 
+    yolo_param_file = os.path.join(config_directory,'yolo.yaml')
+    fusion_param_file = os.path.join(config_directory,'fusing.yaml')  
     # Node #
     lane_detection_node=Node(
             package='ultra_fast_lane_detection',
@@ -31,7 +42,7 @@ def generate_launch_description():
             name='LaneDetector', # .yaml에 명시.
             executable='lane_detect_node',
             output='screen',
-            parameters = [lane_param_file])
+            parameters = [lane_param_file,{'carla_sync_with_delay': LaunchConfiguration('carla_sync_with_delay')}])
     
     lane_keeping_node=Node(
             package='lane_keeping',
@@ -39,7 +50,7 @@ def generate_launch_description():
             name='LaneKeeping', # .yaml에 명시.
             executable='lane_keeping_node',
             output='screen',
-            parameters = [lane_param_file])
+            parameters = [lane_param_file,{'carla_sync_with_delay': LaunchConfiguration('carla_sync_with_delay')}])
             
     object_node=Node(
             package="obstacle_detection",
@@ -50,11 +61,40 @@ def generate_launch_description():
             'stderr': 'screen',
             })
 
+    cluster_node1 = Node(
+            package="euclidean_cluster",
+            namespace="truck2",
+            executable="euclidean_cluster_node",
+            name="euclidean_cluster_node",
+            parameters = [ {'sub_topic_name': 'radar0'}],
+            output='screen'
+    )
+
+    cluster_node2 = Node(
+            package="euclidean_cluster",
+            namespace="truck2",
+            executable="euclidean_cluster_node",
+            name="euclidean_cluster_node_right",
+            parameters = [ {"sub_topic_name": 'radar2'} , {"pub_topic_name": 'right_clustered_radar_points'}],
+            output='screen'
+    )
+
+    cluster_node3 = Node(
+            package="euclidean_cluster",
+            namespace="truck2",
+            executable="euclidean_cluster_node",
+            name="euclidean_cluster_node_left",
+            parameters = [ {"sub_topic_name": 'radar1'} , {"pub_topic_name": 'left_clustered_radar_points'}],
+            output='screen'
+    )
+
+
     speed_control_node=Node(
             package='speed_control', 
             namespace='truck2', 
             name='speed_control_node', 
             executable='speed_control_node', 
+            parameters=[{'carla_sync': LaunchConfiguration('carla_sync')}],
             output='screen')
     v2v_node=Node(
             package='v2v', 
@@ -62,7 +102,7 @@ def generate_launch_description():
             name='v2v', 
             executable='v2v_node', 
             output='screen',
-            parameters=[{'truck_name': LaunchConfiguration('truck_name')}])
+            parameters=[{'truck_name': LaunchConfiguration('truck_name') }])
 
     plan_node=Node(
             package='planner', 
@@ -70,17 +110,72 @@ def generate_launch_description():
             name='planner', 
             executable='planner_node', 
             output='screen',
-            parameters=[{'truck_name': LaunchConfiguration('truck_name')}])
+            parameters=[{'truck_name': LaunchConfiguration('truck_name'), 'carla_sync': LaunchConfiguration('carla_sync'),'carla_sync_with_delay': LaunchConfiguration('carla_sync_with_delay') } ])
+    plan_node_wo=Node(
+            package='plannerwo', 
+            namespace='truck2', 
+            name='plannerwo', 
+            executable='planner_node_wo', 
+            output='screen',
+            parameters=[{'truck_name': LaunchConfiguration('truck_name'), 'carla_sync': LaunchConfiguration('carla_sync'),'carla_sync_with_delay': LaunchConfiguration('carla_sync_with_delay')}])
+    tracking_node=Node(
+            package='object_tracking_ros2',
+            namespace='truck2',
+            name='tracking',
+            executable='object_tracking_ros2',
+            output='screen'
+    )
 
+    yolo_node=Node(
+            package='yolo_object_detection_ros2',
+            namespace='truck2',
+            name='yolo',
+            executable='yolo_object_detection_ros2',
+            output='screen',
+            parameters = [yolo_param_file]
+    )
+
+    fusion_node=Node(
+            package='sensor_fusing_ros2',
+            namespace='truck2',
+            name='fusion',
+            executable='sensor_fusing_ros2',
+            output='screen',
+    )
+
+    test_fusion_node=Node(
+            package='test_fusion_node',
+            namespace='truck2',
+            name='fusion2',
+            executable='test_fusion_node',
+            output='screen',
+    )
+    interface_node=Node(
+            package='interface', 
+            namespace='truck2', 
+            name='interface', 
+            executable='interface_node', 
+            output='screen'
+    )
 
     ld = LaunchDescription([
         declare_truck_name_arg,  # Add the launch argument action
+        declare_carla_sync_arg,
+        declare_carla_sync_with_delay_arg,
         lane_detection_node,
         lane_keeping_node,
-        object_node,
+        #object_node,
+        cluster_node1,
+        cluster_node2,
+        cluster_node3,
         speed_control_node,
         v2v_node,
-        plan_node,
+        plan_node_wo,
+        #tracking_node,
+        #interface_node,
+        yolo_node,
+        test_fusion_node
+        #fusion_node
     ])
     return ld
 

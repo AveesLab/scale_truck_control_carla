@@ -19,12 +19,12 @@ def generate_launch_description():
     )
     declare_carla_sync_arg = DeclareLaunchArgument(
         'carla_sync',  # Name of the launch argument
-        default_value="false",  # Default value if none provided
+        default_value="true",  # Default value if none provided
         description='carla_sync_mode'
     )
     declare_carla_sync_with_delay_arg = DeclareLaunchArgument(
         'carla_sync_with_delay',  # Name of the launch argument
-        default_value="true",  # Default value if none provided
+        default_value="false",  # Default value if none provided
         description='carla_sync_with_delay_mode'
     )
 
@@ -42,7 +42,7 @@ def generate_launch_description():
             name='LaneDetector', # .yaml에 명시.
             executable='lane_detect_node',
             output='screen',
-            parameters = [lane_param_file,{'carla_sync_with_delay': LaunchConfiguation('carla_sync_with_delay')}])
+            parameters = [lane_param_file,{'carla_sync_with_delay': LaunchConfiguration('carla_sync_with_delay')}])
     
     lane_keeping_node=Node(
             package='lane_keeping',
@@ -50,7 +50,7 @@ def generate_launch_description():
             name='LaneKeeping', # .yaml에 명시.
             executable='lane_keeping_node',
             output='screen',
-            parameters = [lane_param_file])
+            parameters = [lane_param_file,{'carla_sync_with_delay': LaunchConfiguration('carla_sync_with_delay')}])
             
     object_node=Node(
             package="obstacle_detection",
@@ -94,7 +94,7 @@ def generate_launch_description():
             namespace='truck0', 
             name='speed_control_node', 
             executable='speed_control_node', 
-            parameters=[{'carla_sync': LaunchConfiguration('carla_sync'), 'carla_sync_with_delay': LaunchConfiguation('carla_sync_with_delay')}],
+            parameters=[{'carla_sync': LaunchConfiguration('carla_sync'), 'carla_sync_with_delay': LaunchConfiguration('carla_sync_with_delay')}],
             output='screen')
     v2v_node=Node(
             package='v2v', 
@@ -110,14 +110,14 @@ def generate_launch_description():
             name='planner', 
             executable='planner_node', 
             output='screen',
-            parameters=[{'truck_name': LaunchConfiguration('truck_name'), 'carla_sync': LaunchConfiguration('carla_sync')} ])
+            parameters=[{'truck_name': LaunchConfiguration('truck_name'), 'carla_sync': LaunchConfiguration('carla_sync'),'carla_sync_with_delay': LaunchConfiguration('carla_sync_with_delay') } ])
     plan_node_wo=Node(
             package='plannerwo', 
             namespace='truck0', 
             name='plannerwo', 
             executable='planner_node_wo', 
             output='screen',
-            parameters=[{'truck_name': LaunchConfiguration('truck_name'), 'carla_sync': LaunchConfiguration('carla_sync')}])
+            parameters=[{'truck_name': LaunchConfiguration('truck_name'), 'carla_sync': LaunchConfiguration('carla_sync'),'carla_sync_with_delay': LaunchConfiguration('carla_sync_with_delay')}])
     tracking_node=Node(
             package='object_tracking_ros2',
             namespace='truck0',

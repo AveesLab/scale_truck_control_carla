@@ -140,6 +140,7 @@ void LaneKeeping::WaitLaneSubCallback(const std_msgs::msg::Bool::SharedPtr msg)
       return;
     }
     else {
+      std::cerr << "prev_steer pub" << std::endl;
       SteerPublisher_->publish(steer_);
     }
   

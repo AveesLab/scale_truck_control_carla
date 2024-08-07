@@ -18,9 +18,9 @@ Controller::Controller()
       std::bind(&Controller::TargetVelocityCallback, this, _1)
     );
   
-    VelocitySubscriber = this->create_subscription<std_msgs::msg::Float32>("velocity",1,std::bind(&Controller::velocity_callback, this, _1));
+    VelocitySubscriber = this->create_subscription<std_msgs::msg::Float32>("velocity",qos,std::bind(&Controller::velocity_callback, this, _1));
     ControlPublisher = this->create_publisher<std_msgs::msg::Float32>("velocity_control",1);
-    WaitVelSubscriber_ = this->create_subscription<std_msgs::msg::Bool>("wait_vel",qos,std::bind(&Controller::WaitVelSubCallback,this,_1));
+    if(sync_with_delay) WaitVelSubscriber_ = this->create_subscription<std_msgs::msg::Bool>("wait_vel",qos,std::bind(&Controller::WaitVelSubCallback,this,_1));
     timer_ = this->create_wall_timer(
         10ms, std::bind(&Controller::SetSpeed, this));
 }   
@@ -60,6 +60,9 @@ void Controller::SetSpeed() {
             if(CurVelArrived) {
                 no_wait_ = false;
                 CurVelArrived = false;
+            }
+            else {
+                return;
             }
         }
         else {

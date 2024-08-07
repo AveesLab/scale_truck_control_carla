@@ -15,6 +15,8 @@ Planner::Planner()
         line_.emplace_back(Mat::zeros(3, 1, CV_32F));
     }
     this->get_parameter_or("carla_sync",sync_,false);
+    this->get_parameter_or("carla_sync_with_delay", sync_with_delay,false);
+
     std::cerr << sync_ << std::endl;
     //DistanceSubscriber_ = this->create_subscription<std_msgs::msg::Float32>("min_distance", 10, std::bind(&Planner::DistanceSubCallback, this, std::placeholders::_1));
     if(lv) TargetSubscriber_ = this->create_subscription<ros2_msg::msg::Target>("target",10,std::bind(&Planner::TargetSubCallback,this,std::placeholders::_1));
@@ -340,11 +342,11 @@ bool Planner::check_side(int num) {
 }
 
 bool Planner::data_received() {
-    if(detected_objects_ && left_object && right_object && lane_ ) {
+    if(detected_objects_ && left_object && right_object /*&& lane_*/ ) {
         detected_objects_ = false;
         left_object = false; 
         right_object = false;
-        lane_ = false;
+        //lane_ = false;
         return true;
     }
     else {
@@ -355,7 +357,7 @@ bool Planner::data_received() {
 }
 
 void Planner::timerCallback() {
-    if(sync_) {
+    if(sync_ || sync_with_delay) {
         if(data_received()) std::cerr << "All data received " << std::endl;
         else return;
     }

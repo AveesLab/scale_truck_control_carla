@@ -207,6 +207,7 @@ private:
 
   int Threshold_box_size_, Threshold_box_offset_;
 
+  bool sync_with_delay = false;
 };
 
 }

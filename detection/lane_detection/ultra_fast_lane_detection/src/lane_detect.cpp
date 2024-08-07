@@ -27,7 +27,7 @@ LaneDetector::LaneDetector()
 
   std::string XavPubTopicName;
   int XavPubQueueSize;
-
+  this->get_parameter_or("carla_sync_with_delay", sync_with_delay,false);
   /******************************/
   /* Ros Topic Subscribe Option */
   /******************************/
@@ -39,14 +39,14 @@ LaneDetector::LaneDetector()
   /****************************/
   this->get_parameter_or("publishers/lane_to_xavier/topic", XavPubTopicName, std::string("lane2xav_msg"));
   this->get_parameter_or("publishers/lane_to_xavier/queue_size", XavPubQueueSize, 1);
-  
+
   /************************/
   /* Ros Topic Subscriber */
   /************************/
   rclcpp::QoS qos(rclcpp::QoSInitialization::from_rmw(rmw_qos_profile_sensor_data));
   
 
-  ImageSubscriber_ = this->create_subscription<sensor_msgs::msg::Image>(ImageSubTopicName, qos, std::bind(&LaneDetector::ImageSubCallback, this, std::placeholders::_1));
+  ImageSubscriber_ = this->create_subscription<sensor_msgs::msg::Image>(sync_with_delay ? "lane_camera" : ImageSubTopicName, qos, std::bind(&LaneDetector::ImageSubCallback, this, std::placeholders::_1));
   DistanceSubscriber_ = this->create_subscription<std_msgs::msg::Float32>("min_distance", 10, std::bind(&LaneDetector::DistanceSubCallback, this, std::placeholders::_1));
 
   /***********************/
