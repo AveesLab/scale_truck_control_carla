@@ -19,7 +19,7 @@ def generate_launch_description():
     )
     declare_carla_sync_arg = DeclareLaunchArgument(
         'carla_sync',  # Name of the launch argument
-        default_value="true",  # Default value if none provided
+        default_value="false",  # Default value if none provided
         description='carla_sync_mode'
     )
     declare_carla_sync_with_delay_arg = DeclareLaunchArgument(
