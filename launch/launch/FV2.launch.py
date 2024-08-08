@@ -94,7 +94,7 @@ def generate_launch_description():
             namespace='truck2', 
             name='speed_control_node', 
             executable='speed_control_node', 
-            parameters=[{'carla_sync': LaunchConfiguration('carla_sync')}],
+            parameters=[{'carla_sync': LaunchConfiguration('carla_sync'), 'carla_sync_with_delay': LaunchConfiguration('carla_sync_with_delay')}],
             output='screen')
     v2v_node=Node(
             package='v2v', 
