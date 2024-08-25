@@ -2,10 +2,10 @@
 
 import os
 from ament_index_python.packages import get_package_share_directory
-
+import launch
 from launch import LaunchDescription
 from launch_ros.actions import Node
-from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription, SetEnvironmentVariable
+from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription, SetEnvironmentVariable, Shutdown
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration
 from launch.substitutions import PathJoinSubstitution
@@ -42,7 +42,9 @@ def generate_launch_description():
             name='LaneDetector', # .yaml에 명시.
             executable='lane_detect_node',
             output='screen',
-            parameters = [lane_param_file,{'carla_sync_with_delay': LaunchConfiguration('carla_sync_with_delay')}])
+            parameters = [lane_param_file,{'carla_sync_with_delay': LaunchConfiguration('carla_sync_with_delay')}],
+            on_exit=launch.actions.Shutdown()  
+            )
     
     lane_keeping_node=Node(
             package='lane_keeping',

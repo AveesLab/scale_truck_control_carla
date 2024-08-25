@@ -48,7 +48,7 @@ LaneDetector::LaneDetector()
 
   ImageSubscriber_ = this->create_subscription<sensor_msgs::msg::Image>(sync_with_delay ? "lane_camera" : ImageSubTopicName, qos, std::bind(&LaneDetector::ImageSubCallback, this, std::placeholders::_1));
   DistanceSubscriber_ = this->create_subscription<std_msgs::msg::Float32>("min_distance", 10, std::bind(&LaneDetector::DistanceSubCallback, this, std::placeholders::_1));
-
+  ShutdownSubscriber = this->create_subscription<std_msgs::msg::String>("/shutdown_topic", 10, std::bind(&LaneDetector::shutdown_callback, this, std::placeholders::_1));
   /***********************/
   /* Ros Topic Publisher */
   /***********************/
@@ -169,7 +169,7 @@ LaneDetector::LaneDetector()
 
         RCLCPP_INFO(this->get_logger(), "Initialize Finish.");
   isNodeRunning_ = true;
-  lanedetect_Thread = std::thread(&LaneDetector::lanedetectInThread, this);
+  //lanedetect_Thread = std::thread(&LaneDetector::lanedetectInThread, this);
 
 }
 
@@ -343,10 +343,15 @@ void LaneDetector::lanedetectInThread()
   }
 }
 
+void LaneDetector::shutdown_callback(const std_msgs::msg::String::SharedPtr msg) {
+    RCLCPP_INFO(this->get_logger(), "Received shutdown message: '%s'", msg->data.c_str());
+    rclcpp::shutdown();
+}
+
 void LaneDetector::ImageSubCallback(const sensor_msgs::msg::Image::SharedPtr msg)
 {
   static cv::Mat prev_img;
-
+  ros2_msg::msg::Lane2xav xav;
   cv_bridge::CvImagePtr cam_image;
   try{
     cam_image = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::BGR8);
@@ -361,6 +366,12 @@ void LaneDetector::ImageSubCallback(const sensor_msgs::msg::Image::SharedPtr msg
     imageStatus_ = true;
     cam_new_frame_arrived = true;
     cam_condition_variable.notify_one();
+    display_img(camImageCopy_, waitKeyDelay_, viewImage_);
+    
+    xav.coef = lane_coef_.coef; 
+    XavPublisher_->publish(xav);
+    std::cerr << "lane pub" << std::endl;
+    imageStatus_ = false;
   }
   else if(!prev_img.empty()) {
     std::cerr << " check image arrive2" << std::endl;

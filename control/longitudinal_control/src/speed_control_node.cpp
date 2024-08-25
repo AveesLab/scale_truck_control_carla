@@ -87,7 +87,6 @@ void Controller::Throttle_PID(double dt_, float tar_vel, float current_vel)
         P_err = Kp_throttle_ * err;
         I_err += Ki_throttle_ * err * dt_;
         A_err += Ka_throttle_ * ((prev_u_k - prev_u) / dt_);
-
       
         u = P_err + I_err + A_err + tar_vel * Kf_throttle_;
 
@@ -96,7 +95,7 @@ void Controller::Throttle_PID(double dt_, float tar_vel, float current_vel)
         if(u >= 1.0) u_k = 1.0f;
         else if(u <= -1.0) u_k = -1.0f;
         else u_k = u;
-
+        std::cerr << tar_vel << ":tar_vel    " << current_vel << ":cur_vel   "  << u_k <<":uk   " << u << ":u" << std::endl; 
         control_msg_.data = u_k;
         ControlPublisher->publish(control_msg_);
         prev_u_k = u_k;
@@ -106,8 +105,8 @@ void Controller::Throttle_PID(double dt_, float tar_vel, float current_vel)
         P_err = 0;
         I_err = 0;
         A_err = 0;
-        u_k = -1.0f;
-        control_msg_.data = u_k;
+        u_k = 0.0f;
+        control_msg_.data = -1.0f;
         ControlPublisher->publish(control_msg_);
     }
 }

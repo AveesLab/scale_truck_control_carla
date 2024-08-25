@@ -73,7 +73,7 @@ void Planner::LeftObjectSubcallback(const sensor_msgs::msg::PointCloud2::SharedP
 void Planner::RightObjectSubcallback(const sensor_msgs::msg::PointCloud2::SharedPtr msg) {
     right_object  = true;
     auto data_ = msg->data;
-    std::cerr << data_.size() << "size" << std::endl;
+    //std::cerr << data_.size() << "size" << std::endl;
     if(data_.size()){
         right_obstacle = true;
     }
@@ -84,7 +84,7 @@ void Planner::RightObjectSubcallback(const sensor_msgs::msg::PointCloud2::Shared
 
 void Planner::LaneSubcallback(const ros2_msg::msg::Lane2xav::SharedPtr msg) {
     lane_ = true;
-    std::cerr << "lane sub" << std::endl;
+    //std::cerr << "lane sub" << std::endl;
     poly_coef_.coef = msg->coef;
     line_[0].at<float>(2,0) = poly_coef_.coef[0].a; // lane 0
     line_[0].at<float>(1,0) = poly_coef_.coef[0].b;
@@ -215,7 +215,7 @@ void Planner::calculate_acc_param() {
     des_spacing = 1.1f *  this->current_velocity;
     spacing_err = this->current_distance - des_spacing;
     speed_err = detected_objects_on_ego_lane.front().velocity;
-        std::cerr << this->current_distance << " " << speed_err << std::endl;
+        //std::cerr << this->current_distance << " " << speed_err << std::endl;
 }
 
 float Planner::calculate_target_velocity_cacc() {
@@ -331,7 +331,7 @@ void Planner::lane_change_flag(int num) {
 
 bool Planner::check_side(int num) {
     if(num == 1){
-        std::cerr << right_obstacle << std::endl;
+        //std::cerr << right_obstacle << std::endl;
         return right_obstacle;
     }
     else if(num == 2) {

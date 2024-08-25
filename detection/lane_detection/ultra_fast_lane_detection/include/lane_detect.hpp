@@ -33,6 +33,7 @@
 #include "ros2_msg/msg/lane2xav.hpp"
 #include "ros2_msg/msg/obj2xav.hpp"
 #include "std_msgs/msg/float32.hpp"
+#include "std_msgs/msg/string.hpp"
 
 #define _GUN_SOURCE
 
@@ -105,10 +106,12 @@ private:
   rclcpp::Subscription<ros2_msg::msg::Xav2lane>::SharedPtr XavSubscriber_;
   rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr ImageSubscriber_;
   rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr DistanceSubscriber_;
+  rclcpp::Subscription<std_msgs::msg::String>::SharedPtr ShutdownSubscriber;
   //Callback Func
   void XavSubCallback(const ros2_msg::msg::Xav2lane::SharedPtr msg);
   void ImageSubCallback(const sensor_msgs::msg::Image::SharedPtr msg);
   void DistanceSubCallback(const std_msgs::msg::Float32::SharedPtr msg);
+  void shutdown_callback(const std_msgs::msg::String::SharedPtr msg);
   bool viewImage_;
   int waitKeyDelay_;
   bool droi_ready_ = false;
