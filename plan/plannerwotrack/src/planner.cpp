@@ -364,15 +364,22 @@ void Planner::timerCallback() {
 
 
     if(!received_) {
-        std::cerr << "platoon emergency mode" << std::endl;
+        std::cerr << "platoon emergency mode11" << std::endl;
         std_msgs::msg::Bool msg;
         msg.data = true;
         EmergencyPublisher_->publish(msg);
         send_full_brake();
         return;
     }
+    else {
+        std_msgs::msg::Bool msg;
+        msg.data = false;
+        EmergencyPublisher_->publish(msg);
+    }
+
+
     if(!lv && emergency_flag_from ) {
-        std::cerr << "platoon emergency mode" << std::endl;
+        std::cerr << "platoon emergency mode22" << std::endl;
         std_msgs::msg::Bool msg;
         msg.data = true;
         EmergencyPublisher_->publish(msg);

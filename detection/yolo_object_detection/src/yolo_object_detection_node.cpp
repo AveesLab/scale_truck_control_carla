@@ -209,7 +209,7 @@ void YoloObjectDetectionNode::detectInThread()
       // objects_ = yoloDetector_->detect(mat1);
       //if(objects_.size() == 0 ) //std::cerr  << " empty "  << std::endl;
 
-      
+      /*
        cv::Mat draw_img;
 
        draw_img = frontCamImageCopy_.clone();
@@ -219,7 +219,7 @@ void YoloObjectDetectionNode::detectInThread()
        }
        cv::imshow("YOLO", draw_img);
        cv::waitKey(waitKeyDelay_);
-      
+      */
       sensor_msgs::msg::Image::SharedPtr output_msg =  cur_image_->toImageMsg();
       CurImagePublisher_->publish(*output_msg);
       publishInThread(objects_);
