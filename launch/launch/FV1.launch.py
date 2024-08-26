@@ -190,8 +190,8 @@ def generate_launch_description():
         #interface_node,
         yolo_node,
         test_fusion_node,
-        test_fusion_lidar_node,
-        lidar_clustering_node
+        #test_fusion_lidar_node,
+        #lidar_clustering_node
         #fusion_node
     ])
     return ld
