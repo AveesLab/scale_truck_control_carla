@@ -56,12 +56,13 @@ private:
     
     /* pub */
     rclcpp::Publisher<ros2_msg::msg::Bbox>::SharedPtr BboxPublisher_;
-    
+    rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr CurImagePublisher_;
     // tmp //
     rclcpp::Publisher<ros2_msg::msg::BboxArray>::SharedPtr BboxArrayPublisher_;
     ////
 
     // cv::Mat rearCamImageCopy_;
+    cv_bridge::CvImagePtr cur_image_;
     cv::Mat frontCamImageCopy_;
     bool imageStatus_ = false;
 

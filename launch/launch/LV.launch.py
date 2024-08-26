@@ -152,6 +152,20 @@ def generate_launch_description():
             executable='test_fusion_node',
             output='screen',
     )
+    test_fusion_lidar_node=Node(
+            package='test_fusion_lidar_node',
+            namespace='truck0',
+            name='fusion3',
+            executable='test_fusion_lidar_node',
+            output='screen',
+    )
+    lidar_clustering_node=Node(
+            package='lidar_vehicle_detection',
+            namespace='truck0',
+            name='clustering_lidar',
+            executable='lidar_vehicle_detection_node',
+            output='screen',
+    )
     interface_node=Node(
             package='interface', 
             namespace='truck0', 
@@ -168,15 +182,17 @@ def generate_launch_description():
         lane_keeping_node,
         #object_node,
         cluster_node1,
-        cluster_node2,
-        cluster_node3,
+        #cluster_node2,
+        #cluster_node3,
         speed_control_node,
         v2v_node,
         plan_node_wo,
         #tracking_node,
         interface_node,
         yolo_node,
-        test_fusion_node
+        test_fusion_node,
+        test_fusion_lidar_node,
+        lidar_clustering_node
         #fusion_node
     ])
     return ld

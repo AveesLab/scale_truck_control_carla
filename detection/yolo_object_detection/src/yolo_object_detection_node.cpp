@@ -110,7 +110,7 @@ void YoloObjectDetectionNode::init() {
   
 
   BboxArrayPublisher_ = this->create_publisher<ros2_msg::msg::BboxArray>(BboxArrayTopicName, qos);
-  
+  CurImagePublisher_ = this->create_publisher<sensor_msgs::msg::Image>("cur_image",qos);
   
   /***************/
   /* Start Setup */
@@ -182,6 +182,7 @@ void YoloObjectDetectionNode::frontCamImgCallback(const sensor_msgs::msg::Image:
     if (cv_ptr) {
       std::scoped_lock lock(front_cam_mutex_);
       frontCamImageCopy_ = cv_ptr->image.clone();
+      cur_image_ = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::BGR8);
       resize(frontCamImageCopy_, frontCamImageCopy_, cv::Size(width_, height_));
       ImageStatus_ = true;
     }
@@ -207,6 +208,8 @@ void YoloObjectDetectionNode::detectInThread()
       //processing_objects = removeDuplication(objects_);
       // objects_ = yoloDetector_->detect(mat1);
       //if(objects_.size() == 0 ) //std::cerr  << " empty "  << std::endl;
+
+      
        cv::Mat draw_img;
 
        draw_img = frontCamImageCopy_.clone();
@@ -216,7 +219,9 @@ void YoloObjectDetectionNode::detectInThread()
        }
        cv::imshow("YOLO", draw_img);
        cv::waitKey(waitKeyDelay_);
-       
+      
+      sensor_msgs::msg::Image::SharedPtr output_msg =  cur_image_->toImageMsg();
+      CurImagePublisher_->publish(*output_msg);
       publishInThread(objects_);
       ImageStatus_ = false;
     }

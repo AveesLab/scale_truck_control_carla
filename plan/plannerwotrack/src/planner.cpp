@@ -396,25 +396,29 @@ void Planner::timerCallback() {
     if(ttc_ <= 2.0f && ttc_ > 0) {
 	    std::cerr << "collision" << ttc_ <<std::endl;
         if(!lv) {
-            /*
+            
             std_msgs::msg::Bool msg;
             msg.data = true;
             EmergencyPublisher_->publish(msg);
             send_full_brake();
             return;
-            */
+            
             if(this->ulane_change ) {
                 if(check_side(this->ulane_change)){
                 std_msgs::msg::Bool msg;
                 msg.data = true;
                 EmergencyPublisher_->publish(msg);
                 send_full_brake();
-            return;
+                return;
                 }
                 else {
                     lane_change_flag(this->ulane_change); // 0: keep 1: right 2: left
                 }
             }
+        }
+
+        else if (lv) {
+            lane_change_flag(1);
         }
 
     }
@@ -468,8 +472,10 @@ void Planner::timerCallback() {
         std_msgs::msg::Float32 msg;
         if(detected_objects_on_ego_lane.size() != 0) {
             //std::cerr << "Check Acc1"<< std::endl;
-            calculate_acc_param();
-            msg.data = calculate_target_velocity_acc();
+            //calculate_acc_param();
+            //msg.data = calculate_target_velocity_acc();
+            //lane_change_flag(1);
+            msg.data = 16.6f;
         }
         else{
                 this->current_distance = 0.0f;

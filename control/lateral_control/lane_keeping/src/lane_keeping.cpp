@@ -81,7 +81,7 @@ void LaneKeeping::LoadParams(void)
   this->get_parameter_or("LaneKeeping/steer_angle",SteerAngle_, 0.0f);
   this->get_parameter_or("LaneKeeping/trust_height",trust_height_, 0.6667f);  
   value_k1 = 1.2f;
-  value_k3 = 1.32f; // 1.3
+  value_k3 = 1.3f; // 1.3
   K1_ = (a_[0] * pow(value_k1, 4)) + (a_[1] * pow(value_k1, 3)) + (a_[2] * pow(value_k1, 2)) + (a_[3] * value_k1) + a_[4];
   K2_ = (b_[0] * pow(value_k1, 4)) + (b_[1] * pow(value_k1, 3)) + (b_[2] * pow(value_k1, 2)) + (b_[3] * value_k1) + b_[4];
   K3_ = (a_[0] * pow(value_k3, 4)) + (a_[1] * pow(value_k3, 3)) + (a_[2] * pow(value_k3, 2)) + (a_[3] * value_k3) + a_[4];
@@ -126,8 +126,8 @@ void LaneKeeping::LaneSubCallback(const ros2_msg::msg::Lane2xav::SharedPtr msg)
   line_[4].at<float>(1,0) = poly_coef_.coef[4].b;
   line_[4].at<float>(0,0) = poly_coef_.coef[4].c;
 
-  if(line_[1].at<float>(0,0) > 320.0) current_center= 2;
-  else current_center=4;
+  //if(line_[1].at<float>(0,0) > 320.0) current_center= 2;
+  //else current_center=4;
   controlSteer();
 
   SteerPublisher_->publish(steer_);
@@ -167,7 +167,7 @@ tk::spline LaneKeeping::cspline(int mark_) {
   float tY1_ = ((float)480) * 0;
   float tY2_ = ((float)480) * 0.1;
   float tY3_ = ((float)480) * 0 +80.0f;
-  float tY4_ = ((float)480) * 0.01 + 80.0f;
+  float tY4_ = ((float)480) * 0.01 + 100.0f;
   float tY5_ = ((float)480) * e1_height_;
   
   std::vector<double> X;
