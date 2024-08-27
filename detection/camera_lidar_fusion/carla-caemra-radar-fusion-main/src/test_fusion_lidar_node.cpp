@@ -11,7 +11,6 @@ test_fusion_node::test_fusion_node()
 {
     // QoS 설정
     rclcpp::QoS qos(rclcpp::QoSInitialization::from_rmw(rmw_qos_profile_sensor_data));
-    qos.best_effort();
 
     // 카메라 내부 파라미터 설정
     camera_matrix_ = (cv::Mat_<double>(3, 3) << 320, 0, 320, 0, 320, 240, 0, 0, 1); // focal_length = 320, cx = 320, cy = 240
@@ -31,9 +30,9 @@ test_fusion_node::test_fusion_node()
     translation.copyTo(transform_(cv::Rect(3, 0, 1, 3)));
 
 
-    ImageSubscriber_ = this->create_subscription<sensor_msgs::msg::Image>("cur_image",qos,bind(&test_fusion_node::ImageSubCallback,this,std::placeholders::_1));
-    BboxArraySubscriber_ = this->create_subscription<ros2_msg::msg::BboxArray>("yolo_object_detection/BboxArray",qos,std::bind(&test_fusion_node::BboxArraySubCallback, this, std::placeholders::_1));
-    PointcloudSubscriber_ = this->create_subscription<sensor_msgs::msg::PointCloud2>("detected_vehicles",qos,std::bind(&test_fusion_node::PointcloudSubCallback, this, std::placeholders::_1));
+    ImageSubscriber_ = this->create_subscription<sensor_msgs::msg::Image>("/truck1/cur_image1",qos,bind(&test_fusion_node::ImageSubCallback,this,std::placeholders::_1));
+    BboxArraySubscriber_ = this->create_subscription<ros2_msg::msg::BboxArray>("/truck1/yolo_object_detection/BboxArray",qos,std::bind(&test_fusion_node::BboxArraySubCallback, this, std::placeholders::_1));
+    PointcloudSubscriber_ = this->create_subscription<sensor_msgs::msg::PointCloud2>("/truck1/detected_vehicles",qos,std::bind(&test_fusion_node::PointcloudSubCallback, this, std::placeholders::_1));
 
     timer_ = this->create_wall_timer(50ms, std::bind(&test_fusion_node::timerCallback, this));
     //FusingPublisher_ = this->create_publisher<ros2_msg::msg::FusingArray>("sensor_fusing/FusingArray", 1);

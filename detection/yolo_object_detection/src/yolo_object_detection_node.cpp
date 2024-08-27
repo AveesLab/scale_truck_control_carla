@@ -124,7 +124,7 @@ void YoloObjectDetectionNode::init() {
   yoloDetector_->detect(img_for_init);
   yoloDetector_->detect(img_for_init);
   std::cerr << " init finish" << std::endl;
-  detectThread_ = std::thread(&YoloObjectDetectionNode::detectInThread, this);
+  //detectThread_ = std::thread(&YoloObjectDetectionNode::detectInThread, this);
 }
 
 std::vector<std::string> YoloObjectDetectionNode::objectNames(std::string const filename)
@@ -185,6 +185,29 @@ void YoloObjectDetectionNode::frontCamImgCallback(const sensor_msgs::msg::Image:
       cur_image_ = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::BGR8);
       resize(frontCamImageCopy_, frontCamImageCopy_, cv::Size(width_, height_));
       ImageStatus_ = true;
+
+      objects_.clear(); // 보류
+      processing_objects.clear();
+      objects_ = yoloDetector_->detect(frontCamImageCopy_);
+      //processing_objects = removeDuplication(objects_);
+      // objects_ = yoloDetector_->detect(mat1);
+      //if(objects_.size() == 0 ) //std::cerr  << " empty "  << std::endl;
+
+      /*
+       cv::Mat draw_img;
+
+       draw_img = frontCamImageCopy_.clone();
+      // cv::imshow("YOLO", mat1);
+       if (!draw_img.empty()) {
+         drawBoxes(draw_img, objects_);
+       }
+       cv::imshow("YOLO", draw_img);
+       cv::waitKey(waitKeyDelay_);
+      */
+      //sensor_msgs::msg::Image::SharedPtr output_msg =  cur_image_->toImageMsg();
+      //CurImagePublisher_->publish(*output_msg);
+      publishInThread(objects_);
+      ImageStatus_ = false;
     }
   }
 }
@@ -220,8 +243,8 @@ void YoloObjectDetectionNode::detectInThread()
        cv::imshow("YOLO", draw_img);
        cv::waitKey(waitKeyDelay_);
       */
-      sensor_msgs::msg::Image::SharedPtr output_msg =  cur_image_->toImageMsg();
-      CurImagePublisher_->publish(*output_msg);
+      //sensor_msgs::msg::Image::SharedPtr output_msg =  cur_image_->toImageMsg();
+      //CurImagePublisher_->publish(*output_msg);
       publishInThread(objects_);
       ImageStatus_ = false;
     }
